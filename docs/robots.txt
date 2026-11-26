@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://danichimi.github.io/taskbar-battery/sitemap.xml

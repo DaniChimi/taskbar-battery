@@ -1,8 +1,43 @@
 # TaskbarBattery
 
-Mostra il livello di batteria dei dispositivi wireless nell'area di notifica di Windows, di qualsiasi marca.
+Mostra il livello di batteria di mouse, tastiere, cuffie e auricolari wireless nella barra delle applicazioni di
+Windows 11 (area di notifica), di qualsiasi marca: dispositivi Bluetooth, dispositivi Logitech in Bluetooth o su
+ricevitore Bolt, Unifying o LIGHTSPEED (MX Master, MX Keys, serie G) e auricolari Nothing / CMF con sinistro, destro e
+custodia. Stato di carica, notifiche di batteria scarica, senza software del produttore (Logi Options+, G HUB o
+Nothing X).
 
 [English](README.md)
+
+<p align="center">
+  <img src="docs/img/demo-it.gif" alt="Demo animata su un desktop Windows 11: l'icona in carica, il pannello con tutti i dispositivi, la finestra delle impostazioni e il menu del tasto destro" width="760">
+</p>
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/panel-it.png"><img src="docs/img/panel-it.png" alt="Pannello aperto dall'icona" width="200"></a><br>
+      <b>Pannello</b><br>
+      <sub>Tutti i dispositivi connessi, con livello, stato di carica, collegamento e tempo di connessione.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/settings-it.png"><img src="docs/img/settings-it.png" alt="Finestra delle impostazioni" width="200"></a><br>
+      <b>Impostazioni</b><br>
+      <sub>Icona, notifiche e opzioni generali accanto ai dispositivi, con rinomina e mostra/nascondi.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/icons-it.png"><img src="docs/img/icons-it.png" alt="I tre stili dell'icona, normale e in carica" width="200"></a><br>
+      <b>Icona</b><br>
+      <sub>Tre stili; in carica la batteria mostra il fulmine, le cifre si riempiono e la barra si anima.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/menu-it.png"><img src="docs/img/menu-it.png" alt="Menu del tasto destro" width="130"></a><br>
+      <b>Menu</b><br>
+      <sub>Tasto destro: impostazioni, aggiorna, esci.</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>Immagini illustrative: il desktop è una ricostruzione e i dispositivi e i livelli sono valori di esempio.</sub>
 
 ## Come funziona
 
@@ -50,6 +85,7 @@ contiene anche **Aggiorna ora** ed **Esci**). Le modifiche valgono subito.
 - **Dispositivi**: rinomina un dispositivo o nascondilo dall'icona, dal pannello e dalle notifiche.
 - **Generale**: avvio con Windows (avvio automatico dell'utente) e log diagnostico,
   `%LOCALAPPDATA%\TaskbarBattery\log.txt`, che registra solo cambiamenti ed errori.
+- **Informazioni**: versione, licenza, link al codice sorgente e per segnalare un problema.
 
 ## Dispositivi supportati
 

@@ -1,8 +1,42 @@
 # TaskbarBattery
 
-Shows the battery level of your wireless devices in the Windows notification area, whatever the brand.
+Shows the battery level of your wireless mouse, keyboard, headset and earbuds in the Windows 11 taskbar (system tray),
+whatever the brand: Bluetooth devices, Logitech devices on Bluetooth or on a Bolt, Unifying or LIGHTSPEED receiver
+(MX Master, MX Keys, G series), and Nothing / CMF earbuds with left, right and case. Charging state, low battery
+notifications, no vendor software (no Logi Options+, G HUB or Nothing X) needed.
 
 [Italiano](README.it.md)
+
+<p align="center">
+  <img src="docs/img/demo-en.gif" alt="Animated demo on a Windows 11 desktop: the tray icon charging, the panel with every device, the settings window and the right-click menu" width="760">
+</p>
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/panel-en.png"><img src="docs/img/panel-en.png" alt="Panel opened from the tray icon" width="200"></a><br>
+      <b>Panel</b><br>
+      <sub>Every connected device, with level, charging state, connection and time connected.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/settings-en.png"><img src="docs/img/settings-en.png" alt="Settings window" width="200"></a><br>
+      <b>Settings</b><br>
+      <sub>Icon, notifications and general options beside the devices, with rename and show/hide.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/icons-en.png"><img src="docs/img/icons-en.png" alt="The three tray icon styles, normal and charging" width="200"></a><br>
+      <b>Tray icon</b><br>
+      <sub>Three styles; while charging the battery shows a bolt, the digits fill up and the bar animates.</sub>
+    </td>
+    <td align="center" valign="top" width="25%">
+      <a href="docs/img/menu-en.png"><img src="docs/img/menu-en.png" alt="Right-click menu" width="130"></a><br>
+      <b>Menu</b><br>
+      <sub>Right click: settings, refresh, exit.</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>Illustrative images: the desktop is a mock-up and the devices and their levels are example values.</sub>
 
 ## How it works
 
@@ -48,6 +82,7 @@ Open them from the gear at the top right of the panel, or with **Settings…** i
 - **Devices**: rename a device or hide it from the icon, the panel and the notifications.
 - **General**: start with Windows (per-user startup list) and the diagnostic log,
   `%LOCALAPPDATA%\TaskbarBattery\log.txt`, which records changes and errors only.
+- **About**: version, licence, links to the source code and to report a problem.
 
 ## Supported devices
 

@@ -59,11 +59,41 @@ namespace TaskbarBattery
             sectionFont = new Font(Theme.TextFont, 11f, FontStyle.Bold);
             controlFont = new Font(Theme.TextFont, 9.5f);
             Font = controlFont;
-            // Wide enough for the segmented rows to keep their descriptions on one line.
-            ClientSize = new Size(Px(640), Px(680));
+            // Device column plus a settings column wide enough for the segmented rows to keep their descriptions
+            // on one line.
+            ClientSize = new Size(Px(DeviceColumnWidth + 640), Px(680));
             ShowIcon = false;
 
-            // The page grows to its content inside a clipping viewport; the themed scroll bar moves it.
+            // Right column: the connected devices, drawn like the flyout, with rename and show/hide on each card.
+            deviceList = new DeviceListView(scale);
+            var devicesTitle = new Label
+            {
+                AutoSize = true,
+                Text = Strings.Get(Strings.Title),
+                Font = sectionFont,
+                ForeColor = p.Text,
+                BackColor = p.Background,
+                Location = new Point(Px(14), Px(16)),
+            };
+            deviceColumn = new Panel { Dock = DockStyle.Right, Width = Px(DeviceColumnWidth), BackColor = p.Background };
+            deviceColumn.Controls.Add(devicesTitle);
+            deviceColumn.Controls.Add(deviceList);
+            deviceList.Location = new Point(Px(12), devicesTitle.Bottom + Px(8));
+            deviceList.Width = deviceColumn.Width - Px(12) - Px(24);
+            deviceList.RenameRequested += delegate(BatteryDevice device)
+            {
+                if (host.RenameDevice(device, this))
+                    RefreshShownDeviceNames();
+            };
+            deviceList.VisibilityChanged += delegate(BatteryDevice device, bool visible)
+            {
+                host.SetHidden(device.Address, !visible);
+                RefreshShownDeviceNames();
+            };
+            UpdateDevices(host.ConnectedDevices, false);
+
+            // Left column: the page grows to its content inside a clipping viewport; the themed scroll bar moves it.
+            // Docking order: the device column takes the right edge first, then the scroll bar sits beside it.
             scrollBar = new FluentScrollBar(scale) { Dock = DockStyle.Right, BackColor = p.Background };
             viewport = new Panel { Dock = DockStyle.Fill, BackColor = p.Background };
             page = new FlowLayoutPanel
@@ -78,6 +108,7 @@ namespace TaskbarBattery
             };
             viewport.Controls.Add(page);
             Controls.Add(scrollBar);
+            Controls.Add(deviceColumn);
             Controls.Add(viewport);
             viewport.BringToFront();
 
@@ -88,8 +119,20 @@ namespace TaskbarBattery
             Build();
         }
 
+        // Logical width of the device column (the flyout's width plus margins).
+        const float DeviceColumnWidth = 372f;
+
         readonly Panel viewport;
         readonly FluentScrollBar scrollBar;
+        readonly Panel deviceColumn;
+        readonly DeviceListView deviceList;
+
+        // Called by the application on every scan and HID++ notification while the window is open.
+        // Takes every connected device: hidden ones are listed too, dimmed, so they can be shown again.
+        public void UpdateDevices(List<BatteryDevice> connectedDevices, bool readFailed)
+        {
+            deviceList.SetDevices(connectedDevices, host.Settings.Hidden, readFailed);
+        }
 
         int Px(float logical)
         {
@@ -99,7 +142,7 @@ namespace TaskbarBattery
         // Rows span the page; the scroll bar has its own column, so the layout never shifts when it appears.
         int RowWidth
         {
-            get { return ClientSize.Width - scrollBar.Width - page.Padding.Horizontal; }
+            get { return ClientSize.Width - deviceColumn.Width - scrollBar.Width - page.Padding.Horizontal; }
         }
 
         void UpdateScrollRange()
@@ -215,14 +258,6 @@ namespace TaskbarBattery
             test.Click += delegate { host.SendTestNotification(); };
             AddRow(Strings.Get(Strings.TestNotification), Strings.Get(Strings.TestNotificationDescription), test);
 
-            // --- devices ---
-            AddSection(Strings.Get(Strings.Devices));
-            List<BatteryDevice> devices = host.ConnectedDevices;
-            if (devices.Count == 0)
-                AddRow(Strings.Get(Strings.NoDevices), Strings.Get(Strings.NoDevicesHint));
-            foreach (BatteryDevice device in devices)
-                AddDeviceRow(device);
-
             // --- general ---
             AddSection(Strings.Get(Strings.SectionGeneral));
             var autostart = new ToggleSwitch(scale, Autostart.IsEnabled);
@@ -236,51 +271,7 @@ namespace TaskbarBattery
             page.ResumeLayout();
         }
 
-        void AddDeviceRow(BatteryDevice device)
-        {
-            Settings settings = host.Settings;
-            bool hidden = settings.Hidden.Contains(device.Address);
-
-            var rename = new FlatButton(scale, controlFont, Strings.Get(Strings.RenameButton));
-            var visibleLabel = new Label
-            {
-                AutoSize = true,
-                Text = Strings.Get(Strings.Visible),
-                Font = descriptionFont,
-                ForeColor = Palette.Current.Secondary,
-                Padding = new Padding(0, Px(7), 0, 0),
-            };
-            var visible = new ToggleSwitch(scale, !hidden);
-            SettingRow row = AddRow(device.DisplayName, DescribeDevice(device), rename, visibleLabel, visible);
-
-            // The toggle sits lower than the 30 px buttons: centre it on the same line.
-            visible.Margin = new Padding(Px(8), Px(5), 0, 0);
-
-            rename.Click += delegate
-            {
-                if (host.RenameDevice(device, this))
-                {
-                    row.Title = device.DisplayName;
-                    RefreshShownDeviceNames();
-                }
-            };
-            visible.CheckedChanged += delegate
-            {
-                host.SetHidden(device.Address, !visible.Checked);
-            };
-        }
-
-        static string DescribeDevice(BatteryDevice device)
-        {
-            var parts = new List<string>();
-            if (device.Manufacturer != null)
-                parts.Add(device.Manufacturer);
-            parts.Add("Bluetooth");
-            parts.Add(Strings.Format(Strings.Percent, device.Percent));
-            return string.Join(" · ", parts.ToArray());
-        }
-
-        // Rebuilds the page after a rename, so the drop-down lists the new name too.
+        // Rebuilds the settings after a rename or a visibility change, so the "device shown" drop-down follows.
         void RefreshShownDeviceNames()
         {
             int scroll = scrollBar.Value;

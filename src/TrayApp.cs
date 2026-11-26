@@ -188,6 +188,8 @@ namespace TaskbarBattery
             UpdateIcons(false);
             if (flyout.Visible)
                 flyout.SetData(visible, lastScan, lastReadFailed);
+            if (settingsWindow != null && !settingsWindow.IsDisposed)
+                settingsWindow.UpdateDevices(connected, lastReadFailed);
 
             foreach (Notice notice in notifier.Process(visible, settings))
                 ShowNotice(notice);

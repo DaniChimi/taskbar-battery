@@ -56,9 +56,12 @@ namespace TaskbarBattery
         public const string TestNotification = "testNotification";
         public const string TestNotificationDescription = "testNotificationDescription";
         public const string Send = "send";
-        public const string Devices = "devices";
-        public const string RenameButton = "renameButton";
-        public const string Visible = "visible";
+
+        public const string RenameTip = "renameTip";
+        public const string HideTip = "hideTip";
+        public const string ShowTip = "showTip";
+        public const string HiddenTag = "hiddenTag";
+
         public const string SectionGeneral = "sectionGeneral";
         public const string StartWithWindows = "startWithWindows";
         public const string StartWithWindowsDescription = "startWithWindowsDescription";
@@ -137,9 +140,10 @@ namespace TaskbarBattery
                     { TestNotification, "Test notification" },
                     { TestNotificationDescription, "Check that Windows shows the notifications" },
                     { Send, "Send" },
-                    { Devices, "Devices" },
-                    { RenameButton, "Rename" },
-                    { Visible, "Visible" },
+                    { RenameTip, "Rename" },
+                    { HideTip, "Hide from the icon and the panel" },
+                    { ShowTip, "Show again" },
+                    { HiddenTag, "hidden" },
                     { SectionGeneral, "General" },
                     { StartWithWindows, "Start with Windows" },
                     { StartWithWindowsDescription, "Open TaskbarBattery when you sign in" },
@@ -215,9 +219,10 @@ namespace TaskbarBattery
                     { TestNotification, "Notifica di prova" },
                     { TestNotificationDescription, "Controlla che Windows mostri le notifiche" },
                     { Send, "Invia" },
-                    { Devices, "Dispositivi" },
-                    { RenameButton, "Rinomina" },
-                    { Visible, "Visibile" },
+                    { RenameTip, "Rinomina" },
+                    { HideTip, "Nascondi dall'icona e dal pannello" },
+                    { ShowTip, "Mostra di nuovo" },
+                    { HiddenTag, "nascosto" },
                     { SectionGeneral, "Generale" },
                     { StartWithWindows, "Avvia con Windows" },
                     { StartWithWindowsDescription, "Apre TaskbarBattery quando accedi" },

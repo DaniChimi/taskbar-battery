@@ -16,12 +16,8 @@ namespace TaskbarBattery
         const float PanelWidth = 340f;
         const float ScreenMargin = 12f;
         const float HeaderHeight = 48f;
-        const float RowHeight = 80f;
-        const float SidePadding = 20f;
-        const float GlyphColumn = 36f;
-        const float SegmentWidth = 22f;
-        const float SegmentHeight = 6f;
-        const float SegmentGap = 4f;
+        const float RowHeight = DeviceRowPainter.RowHeight;
+        const float SidePadding = DeviceRowPainter.SidePadding;
         const float ListBottomPadding = 8f;
         const float FooterHeight = 48f;
         const float ButtonSize = 32f;
@@ -134,11 +130,9 @@ namespace TaskbarBattery
             Palette p = Palette.Current;
             g.Clear(p.Background);
 
+            using (var painter = new DeviceRowPainter(scale))
             using (var title = new Font(Theme.TextFont, 14f * scale, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (var name = new Font(Theme.TextFont, 14f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
-            using (var percent = new Font(Theme.TextFont, 13f * scale, FontStyle.Bold, GraphicsUnit.Pixel))
             using (var secondary = new Font(Theme.TextFont, 12f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
-            using (var glyph = new Font(Theme.GlyphFont, 20f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
             using (var smallGlyph = new Font(Theme.GlyphFont, 16f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 DrawText(g, Strings.Get(Strings.Title), title, p.Text,
@@ -150,14 +144,12 @@ namespace TaskbarBattery
                 DrawIconButton(g, p, settingsBounds, settingsHover, "", smallGlyph);
 
                 if (devices.Count == 0)
-                {
-                    DrawEmptyRow(g, p, RowRect(0), name, secondary);
-                }
+                    painter.DrawEmpty(g, p, RowRect(0), readFailed);
                 for (int i = 0; i < devices.Count; i++)
                 {
                     if (i > 0)
-                        DrawRowDivider(g, p, RowRect(i));
-                    DrawRow(g, p, RowRect(i), devices[i], name, percent, secondary, glyph);
+                        painter.DrawDivider(g, p, RowRect(i));
+                    painter.Draw(g, p, RowRect(i), devices[i]);
                 }
 
                 DrawFooter(g, p, secondary, smallGlyph);
@@ -167,106 +159,6 @@ namespace TaskbarBattery
         Rectangle RowRect(int index)
         {
             return new Rectangle(0, Px(HeaderHeight + index * RowHeight), Width, Px(RowHeight));
-        }
-
-        void DrawRowDivider(Graphics g, Palette p, Rectangle row)
-        {
-            using (var pen = new Pen(p.Divider))
-            {
-                g.DrawLine(pen, Px(SidePadding + GlyphColumn), row.Top, Width - Px(SidePadding), row.Top);
-            }
-        }
-
-        void DrawRow(Graphics g, Palette p, Rectangle row, BatteryDevice device, Font nameFont, Font percentFont,
-            Font secondaryFont, Font glyphFont)
-        {
-            int left = Px(SidePadding);
-            int right = Width - Px(SidePadding);
-            int textLeft = left + Px(GlyphColumn);
-
-            DrawText(g, Theme.Glyph(device.Kind), glyphFont, p.Text,
-                new RectangleF(left, row.Top, Px(GlyphColumn) - Px(8), row.Height), StringAlignment.Center);
-
-            // First line: name on the left, charging state on the right (only when the device reports it).
-            var firstLine = new RectangleF(textLeft, row.Top + Px(10), right - textLeft, Px(20));
-            float chargeWidth = DrawChargeState(g, p, device, secondaryFont, firstLine);
-            DrawText(g, device.DisplayName, nameFont, p.Text,
-                new RectangleF(textLeft, firstLine.Y, firstLine.Width - chargeWidth - Px(8), firstLine.Height), StringAlignment.Near);
-
-            // Second line: the five segments and the percentage; time of the reading on the right.
-            Color on = device.IsLow ? p.Low : p.Bar;
-            int lit = Segments.Lit(device.Percent);
-            float segmentTop = row.Top + Px(38);
-            DrawText(g, DescribeReport(device), secondaryFont, p.Secondary,
-                new RectangleF(textLeft, segmentTop - Px(7), right - textLeft, Px(20)), StringAlignment.Far);
-            float x = textLeft;
-            for (int i = 0; i < Segments.Count; i++)
-            {
-                var segment = new RectangleF(x, segmentTop, Px(SegmentWidth), Px(SegmentHeight));
-                using (GraphicsPath path = Theme.RoundedRect(segment, Px(SegmentHeight) / 2f))
-                using (var fill = new SolidBrush(i < lit ? on : p.Track))
-                {
-                    g.FillPath(fill, path);
-                }
-                x += Px(SegmentWidth) + Px(SegmentGap);
-            }
-            DrawText(g, Strings.Format(Strings.Percent, device.Percent), percentFont, device.IsLow ? p.Low : p.Text,
-                new RectangleF(x + Px(6), segmentTop - Px(7), Px(60), Px(20)), StringAlignment.Near);
-
-            // Third line: maker and how long the device has been connected.
-            var details = new List<string>();
-            if (device.Manufacturer != null)
-                details.Add(device.Manufacturer);
-            if (device.ConnectedSince.HasValue)
-                details.Add(Strings.Format(Strings.ConnectedFor, DescribeDuration(DateTime.Now - device.ConnectedSince.Value)));
-            if (details.Count > 0)
-                DrawText(g, string.Join(" · ", details.ToArray()), secondaryFont, p.Secondary,
-                    new RectangleF(textLeft, row.Top + Px(52), right - textLeft, Px(18)), StringAlignment.Near);
-        }
-
-        // Draws "bolt + Charging" or "Fully charged" right-aligned in the line; returns the width used.
-        float DrawChargeState(Graphics g, Palette p, BatteryDevice device, Font font, RectangleF line)
-        {
-            string label;
-            if (device.Charge == ChargeState.Charging)
-                label = Strings.Get(Strings.Charging);
-            else if (device.Charge == ChargeState.Full)
-                label = Strings.Get(Strings.FullyCharged);
-            else
-                return 0;
-
-            float labelWidth = g.MeasureString(label, font).Width;
-            DrawText(g, label, font, p.Bar, line, StringAlignment.Far);
-            if (device.Charge != ChargeState.Charging)
-                return labelWidth;
-
-            using (var bolt = new Font(Theme.GlyphFont, 12f * scale, FontStyle.Regular, GraphicsUnit.Pixel))
-            {
-                float boltWidth = Px(14);
-                DrawText(g, "", bolt, p.Bar,
-                    new RectangleF(line.Right - labelWidth - boltWidth, line.Y, boltWidth, line.Height), StringAlignment.Center);
-                return labelWidth + boltWidth;
-            }
-        }
-
-        static string DescribeDuration(TimeSpan span)
-        {
-            if (span.TotalMinutes < 1)
-                return Strings.Get(Strings.UnderAMinute);
-            if (span.TotalHours < 1)
-                return Strings.Format(Strings.Minutes, (int)span.TotalMinutes);
-            if (span.TotalDays < 1)
-                return Strings.Format(Strings.Hours, (int)span.TotalHours);
-            return Strings.Format(Strings.Days, (int)span.TotalDays);
-        }
-
-        void DrawEmptyRow(Graphics g, Palette p, Rectangle row, Font nameFont, Font secondaryFont)
-        {
-            int left = Px(SidePadding);
-            string title = readFailed ? Strings.Get(Strings.ReadError) : Strings.Get(Strings.NoDevices);
-            DrawText(g, title, nameFont, p.Text, new RectangleF(left, row.Top + Px(10), Width - 2 * left, Px(20)), StringAlignment.Near);
-            DrawText(g, Strings.Get(Strings.NoDevicesHint), secondaryFont, p.Secondary,
-                new RectangleF(left, row.Top + Px(32), Width - 2 * left, Px(18)), StringAlignment.Near);
         }
 
         void DrawFooter(Graphics g, Palette p, Font secondaryFont, Font glyphFont)
@@ -301,16 +193,6 @@ namespace TaskbarBattery
                 }
             }
             DrawText(g, glyph, glyphFont, p.Text, bounds, StringAlignment.Center);
-        }
-
-        static string DescribeReport(BatteryDevice device)
-        {
-            if (!device.LastUpdated.HasValue)
-                return string.Empty;
-            DateTime updated = device.LastUpdated.Value;
-            return updated.Date == DateTime.Today
-                ? Strings.Format(Strings.ReportedToday, updated)
-                : Strings.Format(Strings.ReportedOn, updated);
         }
 
         static void DrawText(Graphics g, string text, Font font, Color color, RectangleF bounds, StringAlignment alignment)

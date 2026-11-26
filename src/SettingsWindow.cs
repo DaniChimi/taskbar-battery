@@ -282,6 +282,18 @@ namespace TaskbarBattery
             log.Click += delegate { Log.Open(); };
             AddRow(Strings.Get(Strings.DiagnosticLog), Strings.Get(Strings.DiagnosticLogDescription), log);
 
+            // --- about ---
+            AddSection(Strings.Get(Strings.SectionAbout));
+            AddRow("TaskbarBattery", Strings.Format(Strings.AboutVersion, AppInfo.Version, AppInfo.Author));
+
+            var source = new FlatButton(scale, controlFont, Strings.Get(Strings.Open));
+            source.Click += delegate { AppInfo.Open(AppInfo.RepositoryUrl); };
+            AddRow(Strings.Get(Strings.SourceCode), AppInfo.RepositoryUrl.Replace("https://", ""), source);
+
+            var issues = new FlatButton(scale, controlFont, Strings.Get(Strings.Open));
+            issues.Click += delegate { AppInfo.Open(AppInfo.IssuesUrl); };
+            AddRow(Strings.Get(Strings.ReportProblem), Strings.Get(Strings.ReportProblemDescription), issues);
+
             page.ResumeLayout();
         }
 

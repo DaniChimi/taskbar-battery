@@ -77,6 +77,12 @@ namespace TaskbarBattery
         public const string DiagnosticLogDescription = "diagnosticLogDescription";
         public const string Open = "open";
 
+        public const string SectionAbout = "sectionAbout";
+        public const string AboutVersion = "aboutVersion";
+        public const string SourceCode = "sourceCode";
+        public const string ReportProblem = "reportProblem";
+        public const string ReportProblemDescription = "reportProblemDescription";
+
         // Notifications.
         public const string NoticeLowTitle = "noticeLowTitle";
         public const string NoticeLowText = "noticeLowText";
@@ -164,6 +170,11 @@ namespace TaskbarBattery
                     { DiagnosticLog, "Diagnostic log" },
                     { DiagnosticLogDescription, "Changes and errors, for troubleshooting" },
                     { Open, "Open" },
+                    { SectionAbout, "About" },
+                    { AboutVersion, "Version {0} · MIT licence · © 2026 {1}" },
+                    { SourceCode, "Source code" },
+                    { ReportProblem, "Report a problem" },
+                    { ReportProblemDescription, "Open an issue on GitHub, with the output of --probe if a device is missing" },
 
                     { NoticeLowTitle, "{0}: battery low" },
                     { NoticeLowText, "{0}% left. Time to charge it." },
@@ -249,6 +260,11 @@ namespace TaskbarBattery
                     { DiagnosticLog, "Log diagnostico" },
                     { DiagnosticLogDescription, "Cambiamenti ed errori, per capire i problemi" },
                     { Open, "Apri" },
+                    { SectionAbout, "Informazioni" },
+                    { AboutVersion, "Versione {0} · Licenza MIT · © 2026 {1}" },
+                    { SourceCode, "Codice sorgente" },
+                    { ReportProblem, "Segnala un problema" },
+                    { ReportProblemDescription, "Apri una segnalazione su GitHub, con l'output di --probe se manca un dispositivo" },
 
                     { NoticeLowTitle, "{0}: batteria scarica" },
                     { NoticeLowText, "Rimane il {0}%. È ora di caricarlo." },

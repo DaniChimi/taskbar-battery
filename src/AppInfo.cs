@@ -16,7 +16,7 @@ namespace TaskbarBattery
     static class AppInfo
     {
         public const string Author = "Daniele Chiminelli";
-        public const string RepositoryUrl = "https://github.com/DaniChimi/TaskbarBattery";
+        public const string RepositoryUrl = "https://github.com/DaniChimi/taskbar-battery";
 
         public static string IssuesUrl
         {

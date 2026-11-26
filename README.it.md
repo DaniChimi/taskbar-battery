@@ -2,8 +2,8 @@
 
 Mostra il livello di batteria di mouse, tastiere, cuffie e auricolari wireless nella barra delle applicazioni di
 Windows 11 (area di notifica), di qualsiasi marca: dispositivi Bluetooth, dispositivi Logitech in Bluetooth o su
-ricevitore Bolt, Unifying o LIGHTSPEED (MX Master, MX Keys, serie G) e auricolari Nothing / CMF con sinistro, destro e
-custodia. Stato di carica, notifiche di batteria scarica, senza software del produttore (Logi Options+, G HUB o
+ricevitore Bolt, Unifying o LIGHTSPEED (MX Master, MX Keys, serie G), auricolari Nothing / CMF e AirPods con sinistro,
+destro e custodia. Stato di carica, notifiche di batteria scarica, senza software del produttore (Logi Options+, G HUB o
 Nothing X).
 
 [English](README.md)
@@ -57,6 +57,10 @@ Nothing X).
   controllo degli auricolari (il servizio Bluetooth usato dall'app Nothing X): auricolare sinistro, destro e custodia,
   ciascuno con il suo stato di carica, in un'unica scheda. Il canale resta aperto e sono gli auricolari a comunicare i
   cambiamenti. Viene riconosciuto ogni modello che espone quel servizio, qualunque sia il nome.
+- **AirPods e Beats.** Windows mostra al massimo un solo livello. L'app ascolta i messaggi Bluetooth che trasmettono
+  quando sono fuori dalla custodia o con il coperchio aperto, gli stessi che l'iPhone usa per la sua finestrella:
+  sinistro, destro e custodia, a scatti del 10%, con lo stato di carica, nello stesso tipo di scheda. Agli auricolari
+  non viene inviato nulla e, con la custodia chiusa, la scheda mantiene l'ultima lettura.
 - Vengono mostrati solo i dispositivi connessi.
 
 ## L'icona nell'area di notifica
@@ -116,6 +120,15 @@ contiene anche **Aggiorna ora** ed **Esci**). Le modifiche valgono subito.
 | Cuffie over-ear (CMF Headphone Pro, Nothing Headphone (1)) | ⚪ | Probabilmente lo stesso canale, ma la batteria potrebbe usare altri codici. |
 | CMF Watch | ❌ | Protocollo diverso. |
 
+**Apple e Beats**
+
+| Dispositivo | Stato | Note |
+|---|---|---|
+| AirPods (dalla 2ª alla 4ª generazione), AirPods Pro, Pro 2 e Pro 3 | 🟡 | Sinistro, destro e custodia dai loro messaggi Bluetooth, a scatti del 10%. Non ancora provato su un paio vero. |
+| AirPods Max | 🟡 | Un solo livello, stessi messaggi. |
+| Auricolari e cuffie Beats (Studio Buds, Fit Pro, Solo, Studio…) | ⚪ | Trasmettono lo stesso tipo di messaggi; non verificato. |
+| Due paia dello stesso modello connesse insieme | ❌ | I messaggi non dicono quale paio li ha inviati, quindi nessuno dei due riceve una lettura. |
+
 **Altre marche**
 
 | Dispositivo | Stato | Note |
@@ -144,7 +157,8 @@ TaskbarBattery.exe --probe | Out-String
 ```
 
 elenca i dispositivi che comunicano la batteria, le collection HID Logitech, la risposta HID++, quanto riportano gli
-auricolari Nothing / CMF connessi e i dispositivi Logitech trovati su ricevitori, cavi e dongle.
+auricolari Nothing / CMF connessi, i messaggi di AirPods e Beats ricevuti in 10 secondi e i dispositivi Logitech
+trovati su ricevitori, cavi e dongle.
 Le impostazioni sono in `%APPDATA%\TaskbarBattery\settings.txt`.
 
 ## Licenza

@@ -48,10 +48,52 @@ namespace TaskbarBattery
         // Logitech devices on USB receivers, cables and dongles; Bluetooth ones are read through Windows and HID++ above.
         readonly LogitechUsbMonitor logitechUsb;
 
+        // AirPods and Beats: their advertisements, heard while Apple earbuds are connected; the readings go to
+        // earbudsReadings like those of the control channel. Null until first needed, or when Windows lacks the API.
+        AppleAdvertisementWatcher appleWatcher;
+        // Set when this Windows has no advertisement API: the scan is not tried again.
+        bool appleWatcherUnavailable;
+        string lastAppleWatcherError;
+        readonly Dictionary<string, AppleEarbuds.Advertisement> appleLast =
+            new Dictionary<string, AppleEarbuds.Advertisement>(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, AdvertiserLock> appleLocks =
+            new Dictionary<string, AdvertiserLock>(StringComparer.OrdinalIgnoreCase);
+
+        // The sender a pair of earbuds is matched to. Another sender of the same model (someone else's pair nearby)
+        // takes over only when clearly stronger or once the locked one has gone quiet, which also follows the
+        // address the earbuds change every few minutes.
+        sealed class AdvertiserLock
+        {
+            public ulong Sender;
+            public short Signal;
+            public DateTime LastHeard;
+        }
+
+        static readonly TimeSpan AdvertiserSilence = TimeSpan.FromSeconds(15);
+        const int AdvertiserTakeOverMargin = 10;
+
+        // A repeated reading only moves the card's time forward, at most this often.
+        static readonly TimeSpan AppleTimeRefresh = TimeSpan.FromMinutes(1);
+
+        // Advertisements weaker than this come from earbuds too far away to be the user's own (another pair of the
+        // same model nearby); earbuds in the ears or on the desk are well above it.
+        const short AppleMinimumSignal = -70;
+
+        // Parts for earbuds; one level (Parts null) for single-battery headphones.
         sealed class EarbudsReading
         {
             public List<BatteryPart> Parts;
+            public int Level;
+            public bool Charging;
             public DateTime Time;
+
+            public void ApplyTo(BatteryDevice device)
+            {
+                if (Parts != null)
+                    device.ApplyParts(Parts, Time);
+                else
+                    device.ApplyLevel(Level, Charging, Time);
+            }
         }
 
         // Every connected device, hidden ones included, and earbuds that have not reported yet.
@@ -156,6 +198,8 @@ namespace TaskbarBattery
             try
             {
                 earbuds = NothingEarbuds.FindDevices();
+                foreach (KeyValuePair<string, string> apple in AppleEarbuds.FindDevices())
+                    earbuds[apple.Key] = apple.Value;
             }
             catch (Exception ex)
             {
@@ -195,7 +239,7 @@ namespace TaskbarBattery
 
                 EarbudsReading reading;
                 if (device.IsEarbuds && earbudsReadings.TryGetValue(device.Address, out reading))
-                    device.ApplyParts(reading.Parts, reading.Time);
+                    reading.ApplyTo(device);
 
                 // A sleeping device may miss the HID++ query: keep the charging state it last reported (the
                 // listener corrects it as soon as the device sends a notification).
@@ -295,12 +339,22 @@ namespace TaskbarBattery
         // readings of earbuds that left are dropped.
         void SyncEarbudsListeners()
         {
-            var wanted = new HashSet<string>(
+            var present = new HashSet<string>(
                 connected.Where(d => d.IsEarbuds).Select(d => d.Address),
                 StringComparer.OrdinalIgnoreCase);
-
-            foreach (string address in earbudsReadings.Keys.Where(a => !wanted.Contains(a)).ToList())
+            foreach (string address in earbudsReadings.Keys.Where(a => !present.Contains(a)).ToList())
                 earbudsReadings.Remove(address);
+            foreach (string address in appleLast.Keys.Where(a => !present.Contains(a)).ToList())
+                appleLast.Remove(address);
+            foreach (string address in appleLocks.Keys.Where(a => !present.Contains(a)).ToList())
+                appleLocks.Remove(address);
+
+            SyncAppleWatcher();
+
+            // AirPods and Beats have no control channel: only the other earbuds get a listener.
+            var wanted = new HashSet<string>(
+                connected.Where(d => d.IsEarbuds && !IsAppleEarbuds(d)).Select(d => d.Address),
+                StringComparer.OrdinalIgnoreCase);
 
             foreach (string address in earbudsListeners.Keys.ToList())
             {
@@ -326,6 +380,110 @@ namespace TaskbarBattery
                 };
                 earbudsListeners[address] = listener;
             }
+        }
+
+        static bool IsAppleEarbuds(BatteryDevice device)
+        {
+            return device.IsEarbuds && device.Manufacturer == "Apple";
+        }
+
+        // Scans for advertisements only while Apple earbuds are connected.
+        void SyncAppleWatcher()
+        {
+            bool wanted = connected.Any(IsAppleEarbuds);
+            if (!wanted)
+            {
+                if (appleWatcher != null)
+                    appleWatcher.Stop();
+                return;
+            }
+            if (appleWatcherUnavailable)
+                return;
+            try
+            {
+                if (appleWatcher == null)
+                    appleWatcher = CreateAppleWatcher();
+                // Starting again also recovers a scan the radio aborted (Bluetooth turned off and on).
+                appleWatcher.Start();
+                lastAppleWatcherError = null;
+            }
+            catch (TypeLoadException ex)
+            {
+                appleWatcherUnavailable = true;
+                Log.Write("Bluetooth advertisement scan unavailable: " + ex.Message);
+            }
+            catch (System.Runtime.InteropServices.COMException ex)
+            {
+                // REGDB_E_CLASSNOTREG: this Windows has no advertisement watcher at all.
+                if (ex.ErrorCode == unchecked((int)0x80040154))
+                    appleWatcherUnavailable = true;
+                if (ex.Message != lastAppleWatcherError)
+                    Log.Write("Bluetooth advertisement scan failed: " + ex.Message);
+                lastAppleWatcherError = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                // Radio off or busy: tried again at the next scan, logged once.
+                if (ex.Message != lastAppleWatcherError)
+                    Log.Write("Bluetooth advertisement scan failed: " + ex.Message);
+                lastAppleWatcherError = ex.Message;
+            }
+        }
+
+        AppleAdvertisementWatcher CreateAppleWatcher()
+        {
+            var watcher = new AppleAdvertisementWatcher();
+            watcher.Received += delegate(byte[] raw, AppleEarbuds.Advertisement advertisement, ulong sender, short signal)
+            {
+                if (advertisement != null && signal >= AppleMinimumSignal)
+                    ui.Post(delegate { OnAppleAdvertisement(advertisement, sender, signal); }, null);
+            };
+            return watcher;
+        }
+
+        // Advertisements carry a random address, not the paired one: they are matched by model, then to one sender
+        // (see AdvertiserLock). With two connected pairs of the same model the reading is ambiguous and dropped.
+        void OnAppleAdvertisement(AppleEarbuds.Advertisement advertisement, ulong sender, short signal)
+        {
+            List<BatteryDevice> matches = connected
+                .Where(d => IsAppleEarbuds(d) && d.ProductId == advertisement.ProductId)
+                .ToList();
+            if (matches.Count != 1)
+                return;
+            BatteryDevice device = matches[0];
+
+            DateTime now = DateTime.Now;
+            AdvertiserLock locked;
+            if (appleLocks.TryGetValue(device.Address, out locked) && locked.Sender != sender &&
+                now - locked.LastHeard < AdvertiserSilence && signal < locked.Signal + AdvertiserTakeOverMargin)
+                return;
+            appleLocks[device.Address] = new AdvertiserLock { Sender = sender, Signal = signal, LastHeard = now };
+
+            AppleEarbuds.Advertisement last;
+            EarbudsReading previous;
+            if (appleLast.TryGetValue(device.Address, out last) && AppleEarbuds.SameReading(last, advertisement))
+            {
+                // Same levels: only keep the card's time current.
+                if (earbudsReadings.TryGetValue(device.Address, out previous) && now - previous.Time >= AppleTimeRefresh)
+                {
+                    previous.Time = now;
+                    previous.ApplyTo(device);
+                    Refresh();
+                }
+                return;
+            }
+            appleLast[device.Address] = advertisement;
+
+            var reading = new EarbudsReading
+            {
+                Parts = advertisement.Parts,
+                Level = advertisement.Level,
+                Charging = advertisement.Charging,
+                Time = now,
+            };
+            earbudsReadings[device.Address] = reading;
+            reading.ApplyTo(device);
+            Refresh();
         }
 
         // Logitech devices from the USB monitor carry ids of their own ("LOGI-..."), not a Bluetooth address.
@@ -361,7 +519,7 @@ namespace TaskbarBattery
             BatteryDevice device = connected.FirstOrDefault(d => string.Equals(d.Address, address, StringComparison.OrdinalIgnoreCase));
             if (device == null)
                 return;
-            device.ApplyParts(reading.Parts, reading.Time);
+            reading.ApplyTo(device);
             Refresh();
         }
 
@@ -603,6 +761,8 @@ namespace TaskbarBattery
             foreach (EarbudsBatteryListener listener in earbudsListeners.Values)
                 listener.Dispose();
             earbudsListeners.Clear();
+            if (appleWatcher != null)
+                appleWatcher.Dispose();
             logitechUsb.Dispose();
             flyout.Hide();
             if (settingsWindow != null && !settingsWindow.IsDisposed)

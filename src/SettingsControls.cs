@@ -376,7 +376,7 @@ namespace TaskbarBattery
         protected override void OnClick(EventArgs e)
         {
             base.OnClick(e);
-            var menu = new ContextMenuStrip();
+            var menu = new FluentMenu();
             MenuStyle.Apply(menu, true);
             for (int i = 0; i < options.Count; i++)
             {

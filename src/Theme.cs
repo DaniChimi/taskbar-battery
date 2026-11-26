@@ -97,6 +97,9 @@ namespace TaskbarBattery
     {
         public Color Background, Footer, Card, CardBorder, Tile, Text, Secondary, Divider, Track, Bar, Low, Hover, WindowBorder;
 
+        // Context menus, matched to the Windows 11 shell menus (taskbar, clock).
+        public Color Menu;
+
         public static Palette Current
         {
             get { return Theme.IsLight ? Light() : Dark(); }
@@ -120,6 +123,7 @@ namespace TaskbarBattery
                 Low = Color.FromArgb(255, 107, 107),
                 Hover = Color.FromArgb(55, 55, 55),
                 WindowBorder = Color.FromArgb(70, 70, 70),
+                Menu = Color.FromArgb(44, 44, 44),
             };
         }
 
@@ -141,6 +145,7 @@ namespace TaskbarBattery
                 Low = Color.FromArgb(196, 43, 28),
                 Hover = Color.FromArgb(230, 230, 230),
                 WindowBorder = Color.FromArgb(210, 210, 210),
+                Menu = Color.FromArgb(249, 249, 249),
             };
         }
     }

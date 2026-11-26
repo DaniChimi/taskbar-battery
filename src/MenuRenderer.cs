@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
@@ -14,14 +15,9 @@ namespace TaskbarBattery
             RoundedEdges = false;
         }
 
-        static Color MenuBackground(Palette p)
-        {
-            return p.Background;
-        }
-
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
-            using (var fill = new SolidBrush(MenuBackground(Palette.Current)))
+            using (var fill = new SolidBrush(Palette.Current.Menu))
             {
                 e.Graphics.FillRectangle(fill, e.AffectedBounds);
             }
@@ -55,13 +51,49 @@ namespace TaskbarBattery
             }
         }
 
+        // Menus without a check column, distances from the menu's left edge in logical pixels, measured on the
+        // Windows 11 clock menu: the glyph column starts at 15 px and is 16 px wide, the text starts at 44 px.
+        // Without glyphs the text starts at 22 px, where it sits in menus that have a check column.
+        public const float GlyphLeft = 15f;
+        public const float GlyphSize = 16f;
+        public const float GlyphTextIndent = 44f;
+        public const float PlainTextIndent = 22f;
+
+        // Text start for a menu without a check column, in logical pixels.
+        public static float TextIndent(ToolStrip menu)
+        {
+            foreach (ToolStripItem item in menu.Items)
+            {
+                if (item is GlyphMenuItem)
+                    return GlyphTextIndent;
+            }
+            return PlainTextIndent;
+        }
+
         // Drawn here rather than by the base renderer: with Segoe UI Variable, GDI's font metrics push the
         // automatically placed text above the middle of the item. Centring on the full item height fixes it.
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
             Palette p = Palette.Current;
-            var bounds = new Rectangle(e.TextRectangle.X, 0, e.Item.Width - e.TextRectangle.X, e.Item.Height);
-            TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, bounds, e.Item.Enabled ? p.Text : p.Secondary,
+            Color color = e.Item.Enabled ? p.Text : p.Secondary;
+            int x = e.TextRectangle.X;
+            var menu = e.ToolStrip as ToolStripDropDownMenu;
+            if (menu != null && !menu.ShowCheckMargin && !menu.ShowImageMargin)
+            {
+                // Item coordinates: the menu's left edge is at -Item.Bounds.X.
+                float scale = menu.DeviceDpi / 96f;
+                int edge = -e.Item.Bounds.X;
+                x = Math.Max(x, edge + (int)(TextIndent(menu) * scale));
+
+                var glyphItem = e.Item as GlyphMenuItem;
+                if (glyphItem != null && glyphItem.Glyph != null)
+                {
+                    var column = new RectangleF(edge + GlyphLeft * scale, 0, GlyphSize * scale, e.Item.Height);
+                    DrawGlyph(e.Graphics, glyphItem.Glyph, GlyphSize * scale, column, color);
+                }
+            }
+            var bounds = new Rectangle(x, 0, e.Item.Width - x, e.Item.Height);
+            TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, bounds, color,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine |
                 TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
         }
@@ -93,11 +125,25 @@ namespace TaskbarBattery
 
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
         {
+            // Full width minus the same 4 px inset as the hover highlight, from the menu's own edges.
             int y = e.Item.Height / 2;
+            int menuWidth = e.ToolStrip != null ? e.ToolStrip.ClientSize.Width : e.Item.Width;
+            int left = 4 - e.Item.Bounds.X;
             using (var pen = new Pen(Palette.Current.Divider))
             {
-                e.Graphics.DrawLine(pen, 8, y, e.Item.Width - 8, y);
+                e.Graphics.DrawLine(pen, left + 4, y, left + menuWidth - 12, y);
             }
         }
+    }
+
+    // A menu item with a Fluent glyph drawn in front of its text, like the items of the Windows 11 shell menus.
+    sealed class GlyphMenuItem : ToolStripMenuItem
+    {
+        public GlyphMenuItem(string text, string glyph) : base(text)
+        {
+            Glyph = glyph;
+        }
+
+        public string Glyph { get; private set; }
     }
 }

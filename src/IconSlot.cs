@@ -15,14 +15,17 @@ namespace TaskbarBattery
         IntPtr currentHandle = IntPtr.Zero;
         string renderKey;
 
-        public IconSlot(ContextMenuStrip menu, Action leftClick)
+        // The menu is opened by the owner (rightClick) rather than attached to the NotifyIcon, which would open it at
+        // the pointer: the owner places it like the Windows 11 taskbar menus.
+        public IconSlot(Action leftClick, Action rightClick)
         {
             notifyIcon = new NotifyIcon();
-            notifyIcon.ContextMenuStrip = menu;
-            notifyIcon.MouseClick += delegate(object sender, MouseEventArgs e)
+            notifyIcon.MouseUp += delegate(object sender, MouseEventArgs e)
             {
                 if (e.Button == MouseButtons.Left)
                     leftClick();
+                else if (e.Button == MouseButtons.Right)
+                    rightClick();
             };
         }
 

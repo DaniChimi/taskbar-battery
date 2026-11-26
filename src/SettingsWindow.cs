@@ -62,7 +62,10 @@ namespace TaskbarBattery
             // Device column plus a settings column wide enough for the segmented rows to keep their descriptions
             // on one line.
             ClientSize = new Size(Px(DeviceColumnWidth + 640), Px(680));
-            ShowIcon = false;
+
+            // The app icon in the title bar, as Windows 11 windows have; it also sets the title at its usual place.
+            iconHandle = AppIcon.Create(Px(32));
+            Icon = Icon.FromHandle(iconHandle);
 
             // Right column: the connected devices, drawn like the flyout, with rename and show/hide on each card.
             deviceList = new DeviceListView(scale);
@@ -121,6 +124,8 @@ namespace TaskbarBattery
 
         // Logical width of the device column (the flyout's width plus margins).
         const float DeviceColumnWidth = 372f;
+
+        readonly IntPtr iconHandle;
 
         readonly Panel viewport;
         readonly FluentScrollBar scrollBar;
@@ -322,6 +327,12 @@ namespace TaskbarBattery
         {
             if (disposing)
             {
+                Icon icon = Icon;
+                Icon = null;
+                if (icon != null)
+                    icon.Dispose();
+                if (iconHandle != IntPtr.Zero)
+                    Native.DestroyIcon(iconHandle);
                 titleFont.Dispose();
                 descriptionFont.Dispose();
                 sectionFont.Dispose();

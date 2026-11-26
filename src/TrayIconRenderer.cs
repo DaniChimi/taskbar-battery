@@ -268,7 +268,7 @@ namespace TaskbarBattery
         }
 
         // Bitmap.GetHicon loses smooth alpha edges; build a 32-bit icon from a DIB instead.
-        static IntPtr CreateAlphaIcon(Bitmap bitmap)
+        internal static IntPtr CreateAlphaIcon(Bitmap bitmap)
         {
             int width = bitmap.Width;
             int height = bitmap.Height;

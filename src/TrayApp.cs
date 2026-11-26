@@ -59,16 +59,9 @@ namespace TaskbarBattery
             // Creating the first form installed the Windows Forms context for this thread.
             ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
-            menu = new ContextMenuStrip();
+            menu = new FluentMenu();
             MenuStyle.Apply(menu, false);
-            menu.Opening += delegate
-            {
-                if (flyout.Visible)
-                    flyout.Hide();
-                RebuildMenu();
-            };
-
-            mainSlot = new IconSlot(menu, ToggleFlyout);
+            mainSlot = new IconSlot(ToggleFlyout, ShowTrayMenu);
 
             animationTimer = new System.Windows.Forms.Timer { Interval = AnimationIntervalMs };
             animationTimer.Tick += delegate
@@ -284,7 +277,7 @@ namespace TaskbarBattery
                     IconSlot slot;
                     if (!deviceSlots.TryGetValue(device.Address, out slot))
                     {
-                        slot = new IconSlot(menu, ToggleFlyout);
+                        slot = new IconSlot(ToggleFlyout, ShowTrayMenu);
                         deviceSlots[device.Address] = slot;
                     }
                     slot.Update(device, settings.IconStyle, animationFrame, TooltipLine(device), force);

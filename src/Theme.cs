@@ -8,8 +8,6 @@ namespace TaskbarBattery
     // Fonts, glyphs and the light/dark palette shared by the taskbar widget, the flyout and the menu.
     static class Theme
     {
-        public const int LowBatteryPercent = 15;
-
         public static readonly string GlyphFont = FontExists("Segoe Fluent Icons") ? "Segoe Fluent Icons" : "Segoe MDL2 Assets";
         public static readonly string TextFont = FontExists("Segoe UI Variable Text") ? "Segoe UI Variable Text" : "Segoe UI";
         public static readonly string DisplayFont = FontExists("Segoe UI Variable Display") ? "Segoe UI Variable Display" : "Segoe UI";

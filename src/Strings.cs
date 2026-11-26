@@ -32,6 +32,35 @@ namespace TaskbarBattery
         public const string Minutes = "minutes";
         public const string Hours = "hours";
         public const string Days = "days";
+        public const string OneIconPerDevice = "oneIconPerDevice";
+        public const string Devices = "devices";
+        public const string HiddenDevice = "hiddenDevice";
+        public const string Rename = "rename";
+        public const string Hide = "hide";
+        public const string Notifications = "notifications";
+        public const string NotifyLow = "notifyLow";
+        public const string NotifyFull = "notifyFull";
+        public const string NotifyConnect = "notifyConnect";
+        public const string NotifyDisconnect = "notifyDisconnect";
+        public const string LowThreshold = "lowThreshold";
+        public const string SendTestNotification = "sendTestNotification";
+        public const string StartWithWindows = "startWithWindows";
+        public const string OpenLog = "openLog";
+        public const string NoticeLowTitle = "noticeLowTitle";
+        public const string NoticeLowText = "noticeLowText";
+        public const string NoticeFullTitle = "noticeFullTitle";
+        public const string NoticeFullText = "noticeFullText";
+        public const string NoticeConnectedTitle = "noticeConnectedTitle";
+        public const string NoticeConnectedText = "noticeConnectedText";
+        public const string NoticeDisconnectedTitle = "noticeDisconnectedTitle";
+        public const string NoticeDisconnectedText = "noticeDisconnectedText";
+        public const string TestNoticeTitle = "testNoticeTitle";
+        public const string TestNoticeText = "testNoticeText";
+        public const string RenameTitle = "renameTitle";
+        public const string RenamePrompt = "renamePrompt";
+        public const string Save = "save";
+        public const string Cancel = "cancel";
+        public const string RestoreName = "restoreName";
 
         static readonly Dictionary<string, Dictionary<string, string>> Table = new Dictionary<string, Dictionary<string, string>>
         {
@@ -64,6 +93,35 @@ namespace TaskbarBattery
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} d" },
+                    { OneIconPerDevice, "One icon per device" },
+                    { Devices, "Devices" },
+                    { HiddenDevice, "{0} (hidden)" },
+                    { Rename, "Rename…" },
+                    { Hide, "Hide" },
+                    { Notifications, "Notifications" },
+                    { NotifyLow, "When the battery is low" },
+                    { NotifyFull, "When fully charged" },
+                    { NotifyConnect, "When a device connects" },
+                    { NotifyDisconnect, "When a device disconnects" },
+                    { LowThreshold, "Low battery level" },
+                    { SendTestNotification, "Send a test notification" },
+                    { StartWithWindows, "Start with Windows" },
+                    { OpenLog, "Open diagnostic log" },
+                    { NoticeLowTitle, "{0}: battery low" },
+                    { NoticeLowText, "{0}% left. Time to charge it." },
+                    { NoticeFullTitle, "{0} is fully charged" },
+                    { NoticeFullText, "You can unplug the cable." },
+                    { NoticeConnectedTitle, "{0} connected" },
+                    { NoticeConnectedText, "Battery at {0}%." },
+                    { NoticeDisconnectedTitle, "{0} disconnected" },
+                    { NoticeDisconnectedText, "Last battery level: {0}%." },
+                    { TestNoticeTitle, "TaskbarBattery" },
+                    { TestNoticeText, "Notifications are working." },
+                    { RenameTitle, "Rename device" },
+                    { RenamePrompt, "New name for {0}:" },
+                    { Save, "Save" },
+                    { Cancel, "Cancel" },
+                    { RestoreName, "Restore original" },
                 }
             },
             {
@@ -95,6 +153,35 @@ namespace TaskbarBattery
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} g" },
+                    { OneIconPerDevice, "Un'icona per dispositivo" },
+                    { Devices, "Dispositivi" },
+                    { HiddenDevice, "{0} (nascosto)" },
+                    { Rename, "Rinomina…" },
+                    { Hide, "Nascondi" },
+                    { Notifications, "Notifiche" },
+                    { NotifyLow, "Batteria scarica" },
+                    { NotifyFull, "Carica completa" },
+                    { NotifyConnect, "Dispositivo connesso" },
+                    { NotifyDisconnect, "Dispositivo disconnesso" },
+                    { LowThreshold, "Soglia batteria scarica" },
+                    { SendTestNotification, "Invia una notifica di prova" },
+                    { StartWithWindows, "Avvia con Windows" },
+                    { OpenLog, "Apri il log diagnostico" },
+                    { NoticeLowTitle, "{0}: batteria scarica" },
+                    { NoticeLowText, "Rimane il {0}%. È ora di caricarlo." },
+                    { NoticeFullTitle, "{0} è carico" },
+                    { NoticeFullText, "Puoi scollegare il cavo." },
+                    { NoticeConnectedTitle, "{0} connesso" },
+                    { NoticeConnectedText, "Batteria al {0}%." },
+                    { NoticeDisconnectedTitle, "{0} disconnesso" },
+                    { NoticeDisconnectedText, "Ultimo livello di batteria: {0}%." },
+                    { TestNoticeTitle, "TaskbarBattery" },
+                    { TestNoticeText, "Le notifiche funzionano." },
+                    { RenameTitle, "Rinomina dispositivo" },
+                    { RenamePrompt, "Nuovo nome per {0}:" },
+                    { Save, "Salva" },
+                    { Cancel, "Annulla" },
+                    { RestoreName, "Ripristina originale" },
                 }
             },
         };

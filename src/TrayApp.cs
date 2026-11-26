@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -9,43 +8,50 @@ using Microsoft.Win32;
 
 namespace TaskbarBattery
 {
-    // The application: scans the battery sources, draws the tray icon, opens the flyout and owns the menu.
-    sealed class TrayApp : ApplicationContext
+    // The application: scans the battery sources, keeps the tray icons and the flyout up to date, listens to
+    // HID++ notifications and sends user notifications. The context menu lives in TrayApp.Menu.cs.
+    sealed partial class TrayApp : ApplicationContext
     {
         const int ScanIntervalMs = 30 * 1000;
-        const int MaxTooltipLength = 63;
 
-        // A click on the tray icon that closes the flyout must not reopen it straight away.
+        // Drives the charging animation; runs only while a shown icon is animated.
+        const int AnimationIntervalMs = 400;
+
+        // A click on a tray icon that closes the flyout must not reopen it straight away.
         static readonly TimeSpan ReopenGuard = TimeSpan.FromMilliseconds(300);
 
         readonly Settings settings = Settings.Load();
-        readonly NotifyIcon notifyIcon;
+        readonly Notifier notifier = new Notifier();
         readonly Flyout flyout;
         readonly ContextMenuStrip menu;
         readonly System.Windows.Forms.Timer scanTimer;
-
-        // Drives the charging animation; runs only while the shown icon is animated.
-        const int AnimationIntervalMs = 400;
         readonly System.Windows.Forms.Timer animationTimer;
-        int animationFrame;
-
         readonly SynchronizationContext ui;
 
+        // The icon Windows already knows: the single icon, or the first device's with one icon per device.
+        readonly IconSlot mainSlot;
+        // With one icon per device: the extra icons, for every visible device after the first.
+        readonly Dictionary<string, IconSlot> deviceSlots = new Dictionary<string, IconSlot>(StringComparer.OrdinalIgnoreCase);
+
+        int animationFrame;
+
+        readonly Dictionary<string, HidppBatteryListener> listeners =
+            new Dictionary<string, HidppBatteryListener>(StringComparer.OrdinalIgnoreCase);
+
+        // Every connected device, hidden ones included (the Devices menu needs them).
         List<BatteryDevice> connected = new List<BatteryDevice>();
         DateTime lastScan = DateTime.Now;
         bool lastReadFailed;
         bool scanning;
         bool rescanRequested;
-
-        readonly Dictionary<string, HidppBatteryListener> listeners =
-            new Dictionary<string, HidppBatteryListener>(StringComparer.OrdinalIgnoreCase);
-
-        Icon currentIcon;
-        IntPtr currentIconHandle = IntPtr.Zero;
-        string iconKey;
+        string lastLoggedState;
 
         public TrayApp()
         {
+            Log.Write("TaskbarBattery started.");
+            BatteryDevice.LowThreshold = settings.LowThreshold;
+            Autostart.RefreshPath();
+
             flyout = new Flyout();
             flyout.RefreshRequested += delegate { Scan(); };
 
@@ -53,7 +59,7 @@ namespace TaskbarBattery
             ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
             menu = new ContextMenuStrip();
-            StyleDropDown(menu, false);
+            StyleDropDown(menu, true);
             menu.Opening += delegate
             {
                 if (flyout.Visible)
@@ -61,23 +67,16 @@ namespace TaskbarBattery
                 RebuildMenu();
             };
 
-            notifyIcon = new NotifyIcon();
-            notifyIcon.ContextMenuStrip = menu;
-            notifyIcon.MouseClick += delegate(object sender, MouseEventArgs e)
-            {
-                if (e.Button == MouseButtons.Left)
-                    ToggleFlyout();
-            };
+            mainSlot = new IconSlot(menu, ToggleFlyout);
 
             animationTimer = new System.Windows.Forms.Timer { Interval = AnimationIntervalMs };
             animationTimer.Tick += delegate
             {
                 animationFrame = (animationFrame + 1) % TrayIconRenderer.AnimationFrames;
-                UpdateIcon(false);
+                UpdateIcons(false);
             };
 
-            UpdateIcon(true);
-            notifyIcon.Visible = true;
+            UpdateIcons(true);
             Scan();
 
             scanTimer = new System.Windows.Forms.Timer { Interval = ScanIntervalMs };
@@ -86,6 +85,14 @@ namespace TaskbarBattery
 
             SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         }
+
+        // Connected devices the user has not hidden: what the icons, the flyout and the notifications show.
+        List<BatteryDevice> Visible
+        {
+            get { return connected.Where(d => !settings.Hidden.Contains(d.Address)).ToList(); }
+        }
+
+        // --- scanning ---
 
         // Reads on a worker thread (a sleeping device can take a moment to answer HID++) and applies on the UI thread.
         void Scan()
@@ -107,7 +114,7 @@ namespace TaskbarBattery
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Battery read failed: " + ex);
+                    Log.Write("Battery read failed: " + ex.Message);
                     result = new List<BatteryDevice>();
                     failed = true;
                 }
@@ -134,7 +141,7 @@ namespace TaskbarBattery
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine("HID++ read failed for " + device.Name + ": " + ex);
+                        Log.Write("HID++ read failed for " + device.Name + ": " + ex.Message);
                     }
                 }
             }
@@ -143,14 +150,18 @@ namespace TaskbarBattery
 
         void ApplyScan(List<BatteryDevice> devices, bool failed)
         {
+            foreach (BatteryDevice device in devices)
+            {
+                string name;
+                device.CustomName = settings.Names.TryGetValue(device.Address, out name) ? name : null;
+            }
+
             connected = devices;
             lastReadFailed = failed;
             lastScan = DateTime.Now;
             scanning = false;
 
-            UpdateIcon(false);
-            if (flyout.Visible)
-                flyout.SetData(connected, lastScan, lastReadFailed);
+            Refresh();
             SyncListeners();
 
             if (rescanRequested)
@@ -158,6 +169,34 @@ namespace TaskbarBattery
                 rescanRequested = false;
                 Scan();
             }
+        }
+
+        // Pushes the current state to the icons, the flyout, the notifications and the log.
+        void Refresh()
+        {
+            List<BatteryDevice> visible = Visible;
+            UpdateIcons(false);
+            if (flyout.Visible)
+                flyout.SetData(visible, lastScan, lastReadFailed);
+
+            foreach (Notice notice in notifier.Process(visible, settings))
+                ShowNotice(notice);
+
+            LogStateChange(visible);
+        }
+
+        // Logs the device list only when it changes, so the log records events rather than every scan.
+        void LogStateChange(List<BatteryDevice> visible)
+        {
+            string state = lastReadFailed
+                ? "read failed"
+                : visible.Count == 0
+                    ? "no device connected"
+                    : string.Join("; ", visible.Select(d => d.DisplayName + " " + d.Percent + "% " + d.Charge).ToArray());
+            if (state == lastLoggedState)
+                return;
+            lastLoggedState = state;
+            Log.Write("Devices: " + state);
         }
 
         // One HID++ listener per connected Logitech device; listeners whose device left (or that ended) are dropped,
@@ -197,22 +236,57 @@ namespace TaskbarBattery
                 return;
 
             device.ApplyVendorReading(reading.Percent, reading.Charge);
-            UpdateIcon(false);
-            if (flyout.Visible)
-                flyout.SetData(connected, lastScan, lastReadFailed);
+            Refresh();
         }
 
-        // The chosen device if it is connected, otherwise the connected device with the least battery.
-        BatteryDevice ShownDevice()
+        // --- tray icons ---
+
+        // The chosen device if it is visible, otherwise the visible device with the least battery.
+        BatteryDevice ShownDevice(List<BatteryDevice> visible)
         {
-            BatteryDevice chosen = connected.FirstOrDefault(d => string.Equals(d.Address, settings.TrayDevice, StringComparison.OrdinalIgnoreCase));
-            return chosen ?? connected.OrderBy(d => d.Percent).FirstOrDefault();
+            BatteryDevice chosen = visible.FirstOrDefault(d => string.Equals(d.Address, settings.TrayDevice, StringComparison.OrdinalIgnoreCase));
+            return chosen ?? visible.OrderBy(d => d.Percent).FirstOrDefault();
         }
 
-        void UpdateIcon(bool force)
+        void UpdateIcons(bool force)
         {
-            BatteryDevice shown = ShownDevice();
-            bool animated = TrayIconRenderer.IsAnimated(shown, settings.IconStyle);
+            List<BatteryDevice> visible = Visible;
+            bool perDevice = settings.PerDeviceIcons && visible.Count > 0;
+            bool animated;
+
+            if (perDevice)
+            {
+                // The first device keeps the main icon: Windows 11 hides icons it has not seen before under the
+                // overflow arrow, so only the extra devices get new ones.
+                BatteryDevice first = visible[0];
+                mainSlot.Update(first, settings.IconStyle, animationFrame, TooltipLine(first), force);
+
+                List<BatteryDevice> others = visible.Skip(1).ToList();
+                foreach (string address in deviceSlots.Keys.Where(a => !others.Any(d => d.Address == a)).ToList())
+                {
+                    deviceSlots[address].Dispose();
+                    deviceSlots.Remove(address);
+                }
+                foreach (BatteryDevice device in others)
+                {
+                    IconSlot slot;
+                    if (!deviceSlots.TryGetValue(device.Address, out slot))
+                    {
+                        slot = new IconSlot(menu, ToggleFlyout);
+                        deviceSlots[device.Address] = slot;
+                    }
+                    slot.Update(device, settings.IconStyle, animationFrame, TooltipLine(device), force);
+                }
+                animated = visible.Any(d => TrayIconRenderer.IsAnimated(d, settings.IconStyle));
+            }
+            else
+            {
+                DisposeDeviceSlots();
+                BatteryDevice shown = ShownDevice(visible);
+                mainSlot.Update(shown, settings.IconStyle, animationFrame, BuildTooltip(visible), force);
+                animated = TrayIconRenderer.IsAnimated(shown, settings.IconStyle);
+            }
+
             if (animated && !animationTimer.Enabled)
             {
                 animationFrame = 0;
@@ -222,43 +296,37 @@ namespace TaskbarBattery
             {
                 animationTimer.Stop();
             }
-
-            int size = SystemInformation.SmallIconSize.Width;
-            string key = string.Join("|", size, settings.IconStyle, Theme.IsLight, animated ? animationFrame : -1,
-                shown == null ? "-" : shown.Address + ":" + shown.Percent + ":" + shown.Kind + ":" + shown.Charge);
-            if (force || key != iconKey)
-            {
-                IntPtr handle = TrayIconRenderer.Render(shown, settings.IconStyle, size, animationFrame);
-                Icon icon = Icon.FromHandle(handle);
-                notifyIcon.Icon = icon;
-                ReleaseIcon();
-                currentIcon = icon;
-                currentIconHandle = handle;
-                iconKey = key;
-            }
-
-            string tooltip = BuildTooltip();
-            notifyIcon.Text = tooltip.Length > MaxTooltipLength ? tooltip.Substring(0, MaxTooltipLength) : tooltip;
         }
 
-        void ReleaseIcon()
+        void DisposeDeviceSlots()
         {
-            if (currentIcon != null)
-                currentIcon.Dispose();
-            if (currentIconHandle != IntPtr.Zero)
-                Native.DestroyIcon(currentIconHandle);
-            currentIcon = null;
-            currentIconHandle = IntPtr.Zero;
+            foreach (IconSlot slot in deviceSlots.Values)
+                slot.Dispose();
+            deviceSlots.Clear();
         }
 
-        string BuildTooltip()
+        string BuildTooltip(List<BatteryDevice> visible)
         {
             if (lastReadFailed)
                 return Strings.Get(Strings.ReadError);
-            if (connected.Count == 0)
+            if (visible.Count == 0)
                 return Strings.Get(Strings.NoDevices);
-            return string.Join("\n", connected.Select(d =>
-                Strings.Format(d.IsCharging ? Strings.TooltipCharging : Strings.TooltipLine, d.Name, d.Percent)).ToArray());
+            return string.Join("\n", visible.Select(d => TooltipLine(d)).ToArray());
+        }
+
+        static string TooltipLine(BatteryDevice device)
+        {
+            return Strings.Format(device.IsCharging ? Strings.TooltipCharging : Strings.TooltipLine, device.DisplayName, device.Percent);
+        }
+
+        // Toasts come from the device's own icon when it has an extra one, otherwise from the main icon.
+        void ShowNotice(Notice notice)
+        {
+            IconSlot slot;
+            if (!deviceSlots.TryGetValue(notice.Address ?? string.Empty, out slot))
+                slot = mainSlot;
+            slot.Show(notice);
+            Log.Write("Notification: " + notice.Title + " / " + notice.Text);
         }
 
         void ToggleFlyout()
@@ -272,131 +340,27 @@ namespace TaskbarBattery
                 return;
 
             Scan();
-            flyout.ShowNear(new Rectangle(Cursor.Position, new Size(1, 1)), connected, lastScan, lastReadFailed);
-        }
-
-        // --- menu ---
-
-        void RebuildMenu()
-        {
-            menu.Items.Clear();
-
-            var iconMenu = new ToolStripMenuItem(Strings.Get(Strings.TrayIcon));
-            StyleDropDown(iconMenu.DropDown, true);
-            iconMenu.DropDownItems.Add(StyleChoice(Strings.StyleBattery, TrayIconStyle.Battery));
-            iconMenu.DropDownItems.Add(StyleChoice(Strings.StylePercent, TrayIconStyle.Percent));
-            iconMenu.DropDownItems.Add(StyleChoice(Strings.StyleDevice, TrayIconStyle.Device));
-            menu.Items.Add(iconMenu);
-
-            var deviceMenu = new ToolStripMenuItem(Strings.Get(Strings.ShownDevice));
-            StyleDropDown(deviceMenu.DropDown, true);
-            deviceMenu.DropDownItems.Add(DeviceChoice(Strings.Get(Strings.AutomaticLowest), null));
-            if (connected.Count > 0)
-                deviceMenu.DropDownItems.Add(new ToolStripSeparator());
-            foreach (BatteryDevice device in connected)
-                deviceMenu.DropDownItems.Add(DeviceChoice(device.Name, device.Address));
-            menu.Items.Add(deviceMenu);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            var refresh = new ToolStripMenuItem(Strings.Get(Strings.Refresh));
-            refresh.Click += delegate { Scan(); };
-            menu.Items.Add(refresh);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            var exit = new ToolStripMenuItem(Strings.Get(Strings.Exit));
-            exit.Click += delegate { ExitThread(); };
-            menu.Items.Add(exit);
-
-            SpaceItems(menu.Items);
-        }
-
-        // Windows 11 menu metrics: about 32 px per item and a little air around separators (at 100% scale).
-        static void SpaceItems(ToolStripItemCollection items)
-        {
-            foreach (ToolStripItem item in items)
-            {
-                var menuItem = item as ToolStripMenuItem;
-                if (menuItem != null)
-                {
-                    menuItem.Padding = new Padding(6, 7, 6, 7);
-                    if (menuItem.HasDropDownItems)
-                        SpaceItems(menuItem.DropDownItems);
-                }
-                else if (item is ToolStripSeparator)
-                {
-                    item.AutoSize = false;
-                    item.Height = 9;
-                }
-            }
-        }
-
-        ToolStripMenuItem StyleChoice(string textKey, TrayIconStyle style)
-        {
-            var item = new ToolStripMenuItem(Strings.Get(textKey));
-            item.Checked = settings.IconStyle == style;
-            item.Click += delegate
-            {
-                settings.IconStyle = style;
-                settings.Save();
-                UpdateIcon(true);
-            };
-            return item;
-        }
-
-        ToolStripMenuItem DeviceChoice(string text, string address)
-        {
-            var item = new ToolStripMenuItem(text);
-            item.Checked = address == null
-                ? settings.TrayDevice == null
-                : string.Equals(settings.TrayDevice, address, StringComparison.OrdinalIgnoreCase);
-            item.Click += delegate
-            {
-                settings.TrayDevice = address;
-                settings.Save();
-                UpdateIcon(true);
-            };
-            return item;
-        }
-
-        // showChecks: reserve the column for check marks; only the submenus with choices need it.
-        static void StyleDropDown(ToolStripDropDown dropDown, bool showChecks)
-        {
-            dropDown.Renderer = new MenuRenderer();
-            dropDown.Font = new Font(Theme.TextFont, 9.5f);
-            dropDown.Padding = new Padding(4, 4, 4, 4);
-            var menuDropDown = dropDown as ToolStripDropDownMenu;
-            if (menuDropDown != null)
-            {
-                menuDropDown.ShowImageMargin = false;
-                menuDropDown.ShowCheckMargin = showChecks;
-                // The check column is sized from the image size: keep it narrow.
-                menuDropDown.ImageScalingSize = new Size(12, 12);
-            }
-            dropDown.Opened += delegate
-            {
-                int corner = Native.DWMWCP_ROUND;
-                Native.DwmSetWindowAttribute(dropDown.Handle, Native.DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
-            };
+            flyout.ShowNear(new Rectangle(Cursor.Position, new Size(1, 1)), Visible, lastScan, lastReadFailed);
         }
 
         void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            // Theme or accent changes: redraw the icon in the new colours.
+            // Theme or accent changes: redraw the icons in the new colours.
             if (e.Category == UserPreferenceCategory.General || e.Category == UserPreferenceCategory.Color)
-                UpdateIcon(true);
+                UpdateIcons(true);
         }
 
         protected override void ExitThreadCore()
         {
+            Log.Write("TaskbarBattery exiting.");
             scanTimer.Stop();
             animationTimer.Stop();
             foreach (HidppBatteryListener listener in listeners.Values)
                 listener.Dispose();
             listeners.Clear();
             flyout.Hide();
-            notifyIcon.Visible = false;
+            mainSlot.Hide();
+            DisposeDeviceSlots();
             base.ExitThreadCore();
         }
 
@@ -407,10 +371,10 @@ namespace TaskbarBattery
                 SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
                 scanTimer.Dispose();
                 animationTimer.Dispose();
-                notifyIcon.Dispose();
+                mainSlot.Dispose();
+                DisposeDeviceSlots();
                 menu.Dispose();
                 flyout.Dispose();
-                ReleaseIcon();
             }
             base.Dispose(disposing);
         }

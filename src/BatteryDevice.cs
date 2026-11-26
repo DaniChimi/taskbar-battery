@@ -59,9 +59,21 @@ namespace TaskbarBattery
             Charge = charge;
         }
 
+        // Percentage at or below which a battery counts as low; follows the user's setting.
+        public static int LowThreshold = 20;
+
         public bool IsLow
         {
-            get { return Percent <= Theme.LowBatteryPercent && !IsCharging; }
+            get { return Percent <= LowThreshold && !IsCharging; }
+        }
+
+        // Name chosen by the user, or null to use the name Windows reports.
+        public string CustomName { get; set; }
+
+        // The name to show everywhere in the interface.
+        public string DisplayName
+        {
+            get { return string.IsNullOrEmpty(CustomName) ? Name : CustomName; }
         }
 
         // Maps a Windows device container category (for example "Input.Mouse") to a device kind.

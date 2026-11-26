@@ -44,8 +44,10 @@ namespace TaskbarBattery
 
             Palette p = Palette.Current;
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            // Inset from the window edge, as on the Windows 11 menus.
-            var bounds = new Rectangle(4, 1, e.Item.Width - 8, e.Item.Height - 2);
+            // Inset 4 px from the menu's own edges (not the item's, which can be wider than the menu), as on the
+            // Windows 11 menus. Item coordinates: the menu's left edge is at -Item.Bounds.X.
+            int menuWidth = e.ToolStrip != null ? e.ToolStrip.ClientSize.Width : e.Item.Width;
+            var bounds = new Rectangle(4 - e.Item.Bounds.X, 1, menuWidth - 8, e.Item.Height - 2);
             using (GraphicsPath path = Theme.RoundedRect(bounds, 4))
             using (var fill = new SolidBrush(p.Hover))
             {

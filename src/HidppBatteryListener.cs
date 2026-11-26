@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace TaskbarBattery
@@ -48,13 +47,18 @@ namespace TaskbarBattery
                     if (feature == null)
                         return;
 
+                    Log.Write("HID++ listener started for " + address + " (battery feature " + (feature.Unified ? "0x1004" : "0x1000") + ").");
+
                     while (!stop.WaitOne(0))
                     {
                         byte[] report = stream.Read(Timeout.Infinite, stop);
                         if (report == null)
                         {
                             if (stream.Failed)
+                            {
+                                Log.Write("HID++ listener for " + address + " ended: the device went away.");
                                 return;
+                            }
                             continue;
                         }
 
@@ -67,7 +71,7 @@ namespace TaskbarBattery
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("HID++ listener for " + address + " stopped: " + ex);
+                Log.Write("HID++ listener for " + address + " stopped: " + ex.Message);
             }
         }
 

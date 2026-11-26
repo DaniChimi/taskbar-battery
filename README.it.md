@@ -24,8 +24,17 @@ dal menu del tasto destro:
 - **Percentuale**: il numero; in carica, le cifre si riempiono dal basso verso l'alto, a scatti.
 - **Dispositivo e barra**: l'icona del dispositivo con una barra del livello; in carica, la barra si anima verso il pieno.
 
-Il livello diventa rosso dal 15% in giù. Un clic sull'icona apre il pannello con tutti i dispositivi connessi: un
+Con **Un'icona per dispositivo** ogni dispositivo connesso ha la sua icona. Il livello diventa rosso alla soglia di
+batteria scarica (20% di default). Un clic sull'icona apre il pannello con tutti i dispositivi connessi: un
 indicatore a cinque tacche, la percentuale, lo stato di carica (Logitech), il produttore e da quanto è connesso.
+
+## Menu
+
+- **Notifiche**: batteria scarica (una volta per ciclo di scarica), carica completa (Logitech), dispositivo connesso
+  o disconnesso, ciascuna attivabile, con soglia di batteria scarica dal 10% al 30% e una notifica di prova.
+- **Dispositivi**: rinomina un dispositivo o nascondilo dall'icona, dal pannello e dalle notifiche.
+- **Avvia con Windows**: aggiunge l'app all'avvio automatico dell'utente.
+- **Apri il log diagnostico**: `%LOCALAPPDATA%\TaskbarBattery\log.txt`, che registra solo cambiamenti ed errori.
 
 Provato con: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth).
 

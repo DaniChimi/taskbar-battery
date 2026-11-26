@@ -23,8 +23,17 @@ from the right-click menu:
 - **Percentage**: the number; while charging, the digits fill up from the bottom, step by step.
 - **Device and bar**: the device glyph with a level bar; while charging, the bar animates towards full.
 
-The level turns red at 15% or less. Click the icon for the panel with every connected device: a five-segment meter,
-the percentage, the charging state (Logitech), the maker and how long it has been connected.
+With **One icon per device**, every connected device gets its own icon. The level turns red at the low-battery
+threshold (20% by default). Click the icon for the panel with every connected device: a five-segment meter, the
+percentage, the charging state (Logitech), the maker and how long it has been connected.
+
+## Menu
+
+- **Notifications**: low battery (once per discharge), fully charged (Logitech), device connected or disconnected,
+  each on or off, with a low-battery threshold from 10% to 30% and a test notification.
+- **Devices**: rename a device or hide it from the icon, the panel and the notifications.
+- **Start with Windows**: adds the app to the per-user startup list.
+- **Open diagnostic log**: `%LOCALAPPDATA%\TaskbarBattery\log.txt`, which records changes and errors only.
 
 Tested with: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth).
 

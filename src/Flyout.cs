@@ -182,7 +182,7 @@ namespace TaskbarBattery
             // First line: name on the left, charging state on the right (only when the device reports it).
             var firstLine = new RectangleF(textLeft, row.Top + Px(10), right - textLeft, Px(20));
             float chargeWidth = DrawChargeState(g, p, device, secondaryFont, firstLine);
-            DrawText(g, device.Name, nameFont, p.Text,
+            DrawText(g, device.DisplayName, nameFont, p.Text,
                 new RectangleF(textLeft, firstLine.Y, firstLine.Width - chargeWidth - Px(8), firstLine.Height), StringAlignment.Near);
 
             // Second line: the five segments and the percentage; time of the reading on the right.

@@ -59,7 +59,7 @@ Open them from the gear at the top right of the panel, or with **Settings…** i
 |---|---|---|
 | MX Master 4 (Bluetooth) | ✅ | Level, charging state and live updates over HID++. |
 | Other Bluetooth LE devices with HID++ (MX Keys, MX Anywhere, Lift, Ergo, Pebble…) | 🟡 | Same channel as the MX Master 4. |
-| Devices on a Bolt receiver | 🟡 | All six slots are checked. |
+| Devices on a Bolt receiver (MX Master 4 tested) | ✅ | All six slots are checked; connections and disconnections show at once. |
 | Devices on a Unifying receiver | 🟡 | HID++ 2.0 devices only. |
 | Mice and keyboards on a LIGHTSPEED receiver (G series) | 🟡 | Many report a voltage: the percentage is an estimate. |
 | Devices on a USB cable | 🟡 | Merged with the same device on a receiver when its wireless id is known. |

@@ -61,7 +61,7 @@ contiene anche **Aggiorna ora** ed **Esci**). Le modifiche valgono subito.
 |---|---|---|
 | MX Master 4 (Bluetooth) | ✅ | Livello, stato di carica e aggiornamenti in tempo reale via HID++. |
 | Altri dispositivi Bluetooth LE con HID++ (MX Keys, MX Anywhere, Lift, Ergo, Pebble…) | 🟡 | Stesso canale dell'MX Master 4. |
-| Dispositivi su ricevitore Bolt | 🟡 | Vengono controllati tutti e sei gli slot. |
+| Dispositivi su ricevitore Bolt (provato con MX Master 4) | ✅ | Vengono controllati tutti e sei gli slot; connessioni e disconnessioni si vedono subito. |
 | Dispositivi su ricevitore Unifying | 🟡 | Solo i dispositivi HID++ 2.0. |
 | Mouse e tastiere su ricevitore LIGHTSPEED (serie G) | 🟡 | Molti comunicano una tensione: la percentuale è una stima. |
 | Dispositivi via cavo USB | 🟡 | Uniti allo stesso dispositivo sul ricevitore quando se ne conosce l'id wireless. |

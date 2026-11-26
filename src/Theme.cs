@@ -44,13 +44,13 @@ namespace TaskbarBattery
             }
         }
 
-        // Bluetooth, wireless signal (receiver or dongle), USB plug.
+        // Bluetooth, a dongle with radio waves (wireless receiver), a plug (USB cable).
         public static string ConnectionGlyph(ConnectionKind connection)
         {
             switch (connection)
             {
-                case ConnectionKind.Receiver: return "";
-                case ConnectionKind.Usb: return "";
+                case ConnectionKind.Receiver: return "";
+                case ConnectionKind.Usb: return "";
                 default: return "";
             }
         }

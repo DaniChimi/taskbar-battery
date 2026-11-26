@@ -90,7 +90,7 @@ namespace TaskbarBattery
             {
                 "en", new Dictionary<string, string>
                 {
-                    { Title, "Batteries" },
+                    { Title, "Devices" },
                     { NoDevices, "No device connected" },
                     { NoDevicesHint, "Turn on a Bluetooth device that reports its battery" },
                     { Percent, "{0}%" },
@@ -168,7 +168,7 @@ namespace TaskbarBattery
             {
                 "it", new Dictionary<string, string>
                 {
-                    { Title, "Batterie" },
+                    { Title, "Dispositivi" },
                     { NoDevices, "Nessun dispositivo connesso" },
                     { NoDevicesHint, "Accendi un dispositivo Bluetooth che comunica la batteria" },
                     { Percent, "{0}%" },

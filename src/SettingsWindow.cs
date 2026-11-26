@@ -60,12 +60,18 @@ namespace TaskbarBattery
             controlFont = new Font(Theme.TextFont, 9.5f);
             Font = controlFont;
             // Device column plus a settings column wide enough for the segmented rows to keep their descriptions
-            // on one line.
-            ClientSize = new Size(Px(DeviceColumnWidth + 640), Px(680));
+            // on one line; the height includes the 48 px title bar. Applied again once the frame is custom.
+            windowSize = new Size(Px(DeviceColumnWidth + 640), Px(680 + TitleBar.BarHeight));
+            ClientSize = windowSize;
 
-            // The app icon in the title bar, as Windows 11 windows have; it also sets the title at its usual place.
+            // The app icon (taskbar, Alt+Tab, and the title bar we draw).
             iconHandle = AppIcon.Create(Px(32));
             Icon = Icon.FromHandle(iconHandle);
+
+            // Title bar drawn like the Windows 11 Settings app: 48 px, icon at 16 px, title at 48 px.
+            titleBar = new TitleBar(scale, Icon, Text);
+            titleBar.MinimizeClicked += delegate { WindowState = FormWindowState.Minimized; };
+            titleBar.CloseClicked += delegate { Close(); };
 
             // Right column: the connected devices, drawn like the flyout, with rename and show/hide on each card.
             deviceList = new DeviceListView(scale);
@@ -113,7 +119,10 @@ namespace TaskbarBattery
             Controls.Add(scrollBar);
             Controls.Add(deviceColumn);
             Controls.Add(viewport);
+            Controls.Add(titleBar);
             viewport.BringToFront();
+            // Docked first, so it spans the whole width above both columns.
+            titleBar.SendToBack();
 
             scrollBar.ValueChanged += delegate { page.Top = -scrollBar.Value; };
             page.SizeChanged += delegate { UpdateScrollRange(); };
@@ -316,11 +325,46 @@ namespace TaskbarBattery
             AddRow(title, description, toggle);
         }
 
+        readonly TitleBar titleBar;
+        readonly Size windowSize;
+
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
             int dark = Theme.IsLight ? 0 : 1;
             Native.DwmSetWindowAttribute(Handle, Native.DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
+            // Rounded corners and the thin border of Windows 11 windows, asked for explicitly since the frame is custom.
+            int corner = Native.DWMWCP_ROUND;
+            Native.DwmSetWindowAttribute(Handle, Native.DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
+            Color border = Palette.Current.WindowBorder;
+            int colorRef = border.R | (border.G << 8) | (border.B << 16);
+            Native.DwmSetWindowAttribute(Handle, Native.DWMWA_BORDER_COLOR, ref colorRef, sizeof(int));
+
+            // Drop the system caption, then restore the intended size (the client now covers the whole window).
+            CustomFrame.Apply(this);
+            ClientSize = windowSize;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (CustomFrame.Handle(this, titleBar, ref m))
+                return;
+            base.WndProc(ref m);
+            CustomFrame.HitTest(this, titleBar, ref m);
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (titleBar != null)
+                titleBar.Active = true;
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            if (titleBar != null)
+                titleBar.Active = false;
         }
 
         protected override void Dispose(bool disposing)

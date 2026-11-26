@@ -32,8 +32,11 @@ namespace TaskbarBattery
         float scale = 1f;
         Rectangle refreshBounds;
         bool refreshHover;
+        Rectangle settingsBounds;
+        bool settingsHover;
 
         public event EventHandler RefreshRequested;
+        public event EventHandler SettingsRequested;
 
         public Flyout()
         {
@@ -140,6 +143,11 @@ namespace TaskbarBattery
             {
                 DrawText(g, Strings.Get(Strings.Title), title, p.Text,
                     new RectangleF(Px(SidePadding), 0, Width - 2 * Px(SidePadding), Px(HeaderHeight)), StringAlignment.Near);
+
+                // Settings gear, top right, aligned with the refresh button below.
+                int button = Px(ButtonSize);
+                settingsBounds = new Rectangle(Width - Px(12) - button, (Px(HeaderHeight) - button) / 2, button, button);
+                DrawIconButton(g, p, settingsBounds, settingsHover, "", smallGlyph);
 
                 if (devices.Count == 0)
                 {
@@ -279,15 +287,20 @@ namespace TaskbarBattery
 
             int button = Px(ButtonSize);
             refreshBounds = new Rectangle(Width - Px(12) - button, top + (Px(FooterHeight) - button) / 2, button, button);
-            if (refreshHover)
+            DrawIconButton(g, p, refreshBounds, refreshHover, Theme.RefreshGlyph, glyphFont);
+        }
+
+        void DrawIconButton(Graphics g, Palette p, Rectangle bounds, bool hover, string glyph, Font glyphFont)
+        {
+            if (hover)
             {
-                using (GraphicsPath path = Theme.RoundedRect(refreshBounds, Px(4)))
+                using (GraphicsPath path = Theme.RoundedRect(bounds, Px(4)))
                 using (var fill = new SolidBrush(p.Hover))
                 {
                     g.FillPath(fill, path);
                 }
             }
-            DrawText(g, Theme.RefreshGlyph, glyphFont, p.Text, refreshBounds, StringAlignment.Center);
+            DrawText(g, glyph, glyphFont, p.Text, bounds, StringAlignment.Center);
         }
 
         static string DescribeReport(BatteryDevice device)
@@ -322,23 +335,34 @@ namespace TaskbarBattery
                 refreshHover = hover;
                 Invalidate(refreshBounds);
             }
+            hover = settingsBounds.Contains(e.Location);
+            if (hover != settingsHover)
+            {
+                settingsHover = hover;
+                Invalidate(settingsBounds);
+            }
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            if (refreshHover)
+            if (refreshHover || settingsHover)
             {
                 refreshHover = false;
-                Invalidate(refreshBounds);
+                settingsHover = false;
+                Invalidate();
             }
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            if (e.Button == MouseButtons.Left && refreshBounds.Contains(e.Location) && RefreshRequested != null)
+            if (e.Button != MouseButtons.Left)
+                return;
+            if (refreshBounds.Contains(e.Location) && RefreshRequested != null)
                 RefreshRequested(this, EventArgs.Empty);
+            else if (settingsBounds.Contains(e.Location) && SettingsRequested != null)
+                SettingsRequested(this, EventArgs.Empty);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -361,6 +385,7 @@ namespace TaskbarBattery
             {
                 HiddenAt = DateTime.Now;
                 refreshHover = false;
+                settingsHover = false;
             }
         }
     }

@@ -4,115 +4,107 @@ using System.Windows.Forms;
 
 namespace TaskbarBattery
 {
-    // Small dialog to give a device a custom name, themed like the flyout. An empty name, or "Restore",
-    // brings back the name Windows reports.
+    // Small dialog to give a device a custom name, built from the same themed controls as the settings window.
+    // An empty name, or "Restore original", brings back the name Windows reports. Enter saves, Esc cancels.
     sealed class RenameDialog : Form
     {
-        readonly TextBox nameBox;
+        readonly float scale;
+        readonly FluentTextBox nameBox;
+        readonly BatteryDevice device;
 
         // The new custom name, or null to restore the original name. Valid when the dialog returns OK.
         public string CustomName { get; private set; }
 
         public RenameDialog(BatteryDevice device)
         {
+            this.device = device;
             Palette p = Palette.Current;
+            scale = DeviceDpi / 96f;
+
             Text = Strings.Get(Strings.RenameTitle);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
+            ShowIcon = false;
             ShowInTaskbar = false;
-            StartPosition = FormStartPosition.CenterScreen;
-            TopMost = true;
-            AutoScaleMode = AutoScaleMode.Dpi;
-            Font = new Font(Theme.TextFont, 9.5f);
+            StartPosition = FormStartPosition.CenterParent;
+            AutoScaleMode = AutoScaleMode.None;
+            KeyPreview = true;
             BackColor = p.Background;
             ForeColor = p.Text;
-            Padding = new Padding(16);
-            AutoSize = true;
-            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            var font = new Font(Theme.TextFont, 9.5f);
+            Font = font;
 
-            var layout = new TableLayoutPanel
-            {
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                ColumnCount = 1,
-                Dock = DockStyle.Fill,
-                BackColor = p.Background,
-            };
+            int margin = Px(24);
+            int width = Px(380);
 
             var prompt = new Label
             {
-                AutoSize = true,
+                AutoSize = false,
                 Text = Strings.Format(Strings.RenamePrompt, device.Name),
                 ForeColor = p.Secondary,
-                Margin = new Padding(0, 0, 0, 8),
-            };
-
-            nameBox = new TextBox
-            {
-                Text = device.DisplayName,
-                Width = 300,
-                BackColor = p.Card,
-                ForeColor = p.Text,
-                BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(0, 0, 0, 16),
-            };
-
-            var buttons = new FlowLayoutPanel
-            {
-                AutoSize = true,
-                FlowDirection = FlowDirection.RightToLeft,
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0),
                 BackColor = p.Background,
+                Location = new Point(margin, margin),
+                Size = new Size(width, Px(22)),
             };
 
-            Button save = MakeButton(Strings.Get(Strings.Save), p, true);
-            Button cancel = MakeButton(Strings.Get(Strings.Cancel), p, false);
-            Button restore = MakeButton(Strings.Get(Strings.RestoreName), p, false);
+            nameBox = new FluentTextBox(scale, new Font(Theme.TextFont, 10.5f), device.DisplayName, width)
+            {
+                BackColor = p.Background,
+                Location = new Point(margin, prompt.Bottom + Px(8)),
+            };
+            nameBox.Box.KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    Save();
+                }
+            };
+
+            var save = new FlatButton(scale, font, Strings.Get(Strings.Save)) { Primary = true, BackColor = p.Background };
+            var cancel = new FlatButton(scale, font, Strings.Get(Strings.Cancel)) { BackColor = p.Background };
+            var restore = new FlatButton(scale, font, Strings.Get(Strings.RestoreName)) { BackColor = p.Background };
             restore.Enabled = !string.IsNullOrEmpty(device.CustomName);
 
-            save.Click += delegate
-            {
-                string name = nameBox.Text.Trim();
-                CustomName = name.Length == 0 || name == device.Name ? null : name;
-                DialogResult = DialogResult.OK;
-            };
+            int buttonsTop = nameBox.Bottom + Px(24);
+            save.Location = new Point(margin + width - save.Width, buttonsTop);
+            cancel.Location = new Point(save.Left - Px(8) - cancel.Width, buttonsTop);
+            restore.Location = new Point(margin, buttonsTop);
+
+            save.Click += delegate { Save(); };
+            cancel.Click += delegate { DialogResult = DialogResult.Cancel; };
             restore.Click += delegate
             {
                 CustomName = null;
                 DialogResult = DialogResult.OK;
             };
-            cancel.DialogResult = DialogResult.Cancel;
 
-            buttons.Controls.Add(save);
-            buttons.Controls.Add(cancel);
-            buttons.Controls.Add(restore);
-
-            layout.Controls.Add(prompt);
-            layout.Controls.Add(nameBox);
-            layout.Controls.Add(buttons);
-            Controls.Add(layout);
-
-            AcceptButton = save;
-            CancelButton = cancel;
+            Controls.Add(prompt);
+            Controls.Add(nameBox);
+            Controls.Add(restore);
+            Controls.Add(cancel);
+            Controls.Add(save);
+            ClientSize = new Size(margin * 2 + width, save.Bottom + margin);
         }
 
-        static Button MakeButton(string text, Palette p, bool primary)
+        int Px(float logical)
         {
-            var button = new Button
-            {
-                Text = text,
-                AutoSize = true,
-                MinimumSize = new Size(90, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = primary ? p.Bar : p.Card,
-                ForeColor = primary ? (Theme.IsLight ? Color.White : Color.Black) : p.Text,
-                Margin = new Padding(8, 0, 0, 0),
-                UseVisualStyleBackColor = false,
-            };
-            button.FlatAppearance.BorderColor = primary ? p.Bar : p.CardBorder;
-            return button;
+            return (int)Math.Round(logical * scale);
+        }
+
+        void Save()
+        {
+            string name = nameBox.Text.Trim();
+            CustomName = name.Length == 0 || name == device.Name ? null : name;
+            DialogResult = DialogResult.OK;
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.KeyCode == Keys.Escape)
+                DialogResult = DialogResult.Cancel;
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -126,8 +118,8 @@ namespace TaskbarBattery
         {
             base.OnShown(e);
             Activate();
-            nameBox.Focus();
-            nameBox.SelectAll();
+            nameBox.Box.Focus();
+            nameBox.Box.SelectAll();
         }
     }
 }

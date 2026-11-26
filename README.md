@@ -27,13 +27,17 @@ With **One icon per device**, every connected device gets its own icon. The leve
 threshold (20% by default). Click the icon for the panel with every connected device: a five-segment meter, the
 percentage, the charging state (Logitech), the maker and how long it has been connected.
 
-## Menu
+## Settings
 
+Open them from the gear at the top right of the panel, or with **Settings…** in the right-click menu (which also has
+**Refresh now** and **Exit**). Changes apply at once.
+
+- **Tray icon**: icon style, one icon per device, which device the single icon follows.
 - **Notifications**: low battery (once per discharge), fully charged (Logitech), device connected or disconnected,
   each on or off, with a low-battery threshold from 10% to 30% and a test notification.
 - **Devices**: rename a device or hide it from the icon, the panel and the notifications.
-- **Start with Windows**: adds the app to the per-user startup list.
-- **Open diagnostic log**: `%LOCALAPPDATA%\TaskbarBattery\log.txt`, which records changes and errors only.
+- **General**: start with Windows (per-user startup list) and the diagnostic log,
+  `%LOCALAPPDATA%\TaskbarBattery\log.txt`, which records changes and errors only.
 
 Tested with: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth).
 

@@ -28,13 +28,17 @@ Con **Un'icona per dispositivo** ogni dispositivo connesso ha la sua icona. Il l
 batteria scarica (20% di default). Un clic sull'icona apre il pannello con tutti i dispositivi connessi: un
 indicatore a cinque tacche, la percentuale, lo stato di carica (Logitech), il produttore e da quanto è connesso.
 
-## Menu
+## Impostazioni
 
+Si aprono dall'ingranaggio in alto a destra nel pannello, oppure con **Impostazioni…** nel menu del tasto destro (che
+contiene anche **Aggiorna ora** ed **Esci**). Le modifiche valgono subito.
+
+- **Icona nell'area di notifica**: stile dell'icona, un'icona per dispositivo, quale dispositivo segue l'icona singola.
 - **Notifiche**: batteria scarica (una volta per ciclo di scarica), carica completa (Logitech), dispositivo connesso
   o disconnesso, ciascuna attivabile, con soglia di batteria scarica dal 10% al 30% e una notifica di prova.
 - **Dispositivi**: rinomina un dispositivo o nascondilo dall'icona, dal pannello e dalle notifiche.
-- **Avvia con Windows**: aggiunge l'app all'avvio automatico dell'utente.
-- **Apri il log diagnostico**: `%LOCALAPPDATA%\TaskbarBattery\log.txt`, che registra solo cambiamenti ed errori.
+- **Generale**: avvio con Windows (avvio automatico dell'utente) e log diagnostico,
+  `%LOCALAPPDATA%\TaskbarBattery\log.txt`, che registra solo cambiamenti ed errori.
 
 Provato con: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth).
 

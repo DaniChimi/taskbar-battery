@@ -6,9 +6,8 @@ namespace TaskbarBattery
     // User-facing text, one dictionary per language. The UI language follows Windows; English is the fallback.
     static class Strings
     {
+        // Flyout and tray.
         public const string Title = "title";
-        public const string Refresh = "refresh";
-        public const string Exit = "exit";
         public const string NoDevices = "noDevices";
         public const string NoDevicesHint = "noDevicesHint";
         public const string Percent = "percent";
@@ -17,35 +16,57 @@ namespace TaskbarBattery
         public const string UpdatedNow = "updatedNow";
         public const string UpdatedAt = "updatedAt";
         public const string TooltipLine = "tooltipLine";
+        public const string TooltipCharging = "tooltipCharging";
         public const string ReadError = "readError";
-        public const string TrayIcon = "trayIcon";
-        public const string StyleBattery = "styleBattery";
-        public const string StylePercent = "stylePercent";
-        public const string StyleDevice = "styleDevice";
-        public const string ShownDevice = "shownDevice";
-        public const string AutomaticLowest = "automaticLowest";
         public const string Charging = "charging";
         public const string FullyCharged = "fullyCharged";
-        public const string TooltipCharging = "tooltipCharging";
         public const string ConnectedFor = "connectedFor";
         public const string UnderAMinute = "underAMinute";
         public const string Minutes = "minutes";
         public const string Hours = "hours";
         public const string Days = "days";
+
+        // Right-click menu.
+        public const string SettingsMenu = "settingsMenu";
+        public const string Refresh = "refresh";
+        public const string Exit = "exit";
+
+        // Settings window.
+        public const string SettingsTitle = "settingsTitle";
+        public const string SectionTrayIcon = "sectionTrayIcon";
+        public const string StyleTitle = "styleTitle";
+        public const string StyleDescription = "styleDescription";
+        public const string StyleBattery = "styleBattery";
+        public const string StylePercent = "stylePercent";
+        public const string StyleDeviceShort = "styleDeviceShort";
         public const string OneIconPerDevice = "oneIconPerDevice";
-        public const string Devices = "devices";
-        public const string HiddenDevice = "hiddenDevice";
-        public const string Rename = "rename";
-        public const string Hide = "hide";
+        public const string OneIconDescription = "oneIconDescription";
+        public const string ShownDevice = "shownDevice";
+        public const string ShownDeviceDescription = "shownDeviceDescription";
+        public const string AutomaticLowest = "automaticLowest";
         public const string Notifications = "notifications";
         public const string NotifyLow = "notifyLow";
+        public const string NotifyLowDescription = "notifyLowDescription";
         public const string NotifyFull = "notifyFull";
+        public const string NotifyFullDescription = "notifyFullDescription";
         public const string NotifyConnect = "notifyConnect";
         public const string NotifyDisconnect = "notifyDisconnect";
         public const string LowThreshold = "lowThreshold";
-        public const string SendTestNotification = "sendTestNotification";
+        public const string LowThresholdDescription = "lowThresholdDescription";
+        public const string TestNotification = "testNotification";
+        public const string TestNotificationDescription = "testNotificationDescription";
+        public const string Send = "send";
+        public const string Devices = "devices";
+        public const string RenameButton = "renameButton";
+        public const string Visible = "visible";
+        public const string SectionGeneral = "sectionGeneral";
         public const string StartWithWindows = "startWithWindows";
-        public const string OpenLog = "openLog";
+        public const string StartWithWindowsDescription = "startWithWindowsDescription";
+        public const string DiagnosticLog = "diagnosticLog";
+        public const string DiagnosticLogDescription = "diagnosticLogDescription";
+        public const string Open = "open";
+
+        // Notifications.
         public const string NoticeLowTitle = "noticeLowTitle";
         public const string NoticeLowText = "noticeLowText";
         public const string NoticeFullTitle = "noticeFullTitle";
@@ -56,6 +77,8 @@ namespace TaskbarBattery
         public const string NoticeDisconnectedText = "noticeDisconnectedText";
         public const string TestNoticeTitle = "testNoticeTitle";
         public const string TestNoticeText = "testNoticeText";
+
+        // Rename dialog.
         public const string RenameTitle = "renameTitle";
         public const string RenamePrompt = "renamePrompt";
         public const string Save = "save";
@@ -68,8 +91,6 @@ namespace TaskbarBattery
                 "en", new Dictionary<string, string>
                 {
                     { Title, "Batteries" },
-                    { Refresh, "Refresh now" },
-                    { Exit, "Exit" },
                     { NoDevices, "No device connected" },
                     { NoDevicesHint, "Turn on a Bluetooth device that reports its battery" },
                     { Percent, "{0}%" },
@@ -78,35 +99,54 @@ namespace TaskbarBattery
                     { UpdatedNow, "Updated just now" },
                     { UpdatedAt, "Updated at {0:HH:mm}" },
                     { TooltipLine, "{0}: {1}%" },
+                    { TooltipCharging, "{0}: {1}% (charging)" },
                     { ReadError, "Could not read the devices" },
-                    { TrayIcon, "Tray icon" },
-                    { StyleBattery, "Battery" },
-                    { StylePercent, "Percentage" },
-                    { StyleDevice, "Device and bar" },
-                    { ShownDevice, "Device shown" },
-                    { AutomaticLowest, "Automatic (lowest battery)" },
                     { Charging, "Charging" },
                     { FullyCharged, "Fully charged" },
-                    { TooltipCharging, "{0}: {1}% (charging)" },
                     { ConnectedFor, "connected for {0}" },
                     { UnderAMinute, "under a minute" },
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} d" },
+
+                    { SettingsMenu, "Settings…" },
+                    { Refresh, "Refresh now" },
+                    { Exit, "Exit" },
+
+                    { SettingsTitle, "TaskbarBattery settings" },
+                    { SectionTrayIcon, "Tray icon" },
+                    { StyleTitle, "Icon style" },
+                    { StyleDescription, "How the icon looks next to the clock" },
+                    { StyleBattery, "Battery" },
+                    { StylePercent, "Percentage" },
+                    { StyleDeviceShort, "Device" },
                     { OneIconPerDevice, "One icon per device" },
-                    { Devices, "Devices" },
-                    { HiddenDevice, "{0} (hidden)" },
-                    { Rename, "Rename…" },
-                    { Hide, "Hide" },
+                    { OneIconDescription, "A separate icon for each connected device" },
+                    { ShownDevice, "Device shown" },
+                    { ShownDeviceDescription, "The device the single icon follows" },
+                    { AutomaticLowest, "Automatic (lowest battery)" },
                     { Notifications, "Notifications" },
-                    { NotifyLow, "When the battery is low" },
-                    { NotifyFull, "When fully charged" },
-                    { NotifyConnect, "When a device connects" },
-                    { NotifyDisconnect, "When a device disconnects" },
-                    { LowThreshold, "Low battery level" },
-                    { SendTestNotification, "Send a test notification" },
+                    { NotifyLow, "Battery low" },
+                    { NotifyLowDescription, "Once per discharge, at the threshold below" },
+                    { NotifyFull, "Fully charged" },
+                    { NotifyFullDescription, "For devices that report charging (Logitech)" },
+                    { NotifyConnect, "Device connected" },
+                    { NotifyDisconnect, "Device disconnected" },
+                    { LowThreshold, "Low battery threshold" },
+                    { LowThresholdDescription, "At or below this level the battery turns red" },
+                    { TestNotification, "Test notification" },
+                    { TestNotificationDescription, "Check that Windows shows the notifications" },
+                    { Send, "Send" },
+                    { Devices, "Devices" },
+                    { RenameButton, "Rename" },
+                    { Visible, "Visible" },
+                    { SectionGeneral, "General" },
                     { StartWithWindows, "Start with Windows" },
-                    { OpenLog, "Open diagnostic log" },
+                    { StartWithWindowsDescription, "Open TaskbarBattery when you sign in" },
+                    { DiagnosticLog, "Diagnostic log" },
+                    { DiagnosticLogDescription, "Changes and errors, for troubleshooting" },
+                    { Open, "Open" },
+
                     { NoticeLowTitle, "{0}: battery low" },
                     { NoticeLowText, "{0}% left. Time to charge it." },
                     { NoticeFullTitle, "{0} is fully charged" },
@@ -117,6 +157,7 @@ namespace TaskbarBattery
                     { NoticeDisconnectedText, "Last battery level: {0}%." },
                     { TestNoticeTitle, "TaskbarBattery" },
                     { TestNoticeText, "Notifications are working." },
+
                     { RenameTitle, "Rename device" },
                     { RenamePrompt, "New name for {0}:" },
                     { Save, "Save" },
@@ -128,8 +169,6 @@ namespace TaskbarBattery
                 "it", new Dictionary<string, string>
                 {
                     { Title, "Batterie" },
-                    { Refresh, "Aggiorna ora" },
-                    { Exit, "Esci" },
                     { NoDevices, "Nessun dispositivo connesso" },
                     { NoDevicesHint, "Accendi un dispositivo Bluetooth che comunica la batteria" },
                     { Percent, "{0}%" },
@@ -138,35 +177,54 @@ namespace TaskbarBattery
                     { UpdatedNow, "Aggiornato adesso" },
                     { UpdatedAt, "Aggiornato alle {0:HH:mm}" },
                     { TooltipLine, "{0}: {1}%" },
+                    { TooltipCharging, "{0}: {1}% (in carica)" },
                     { ReadError, "Impossibile leggere i dispositivi" },
-                    { TrayIcon, "Icona nella tray" },
-                    { StyleBattery, "Batteria" },
-                    { StylePercent, "Percentuale" },
-                    { StyleDevice, "Dispositivo e barra" },
-                    { ShownDevice, "Dispositivo mostrato" },
-                    { AutomaticLowest, "Automatico (batteria più bassa)" },
                     { Charging, "In carica" },
                     { FullyCharged, "Carica completa" },
-                    { TooltipCharging, "{0}: {1}% (in carica)" },
                     { ConnectedFor, "connesso da {0}" },
                     { UnderAMinute, "meno di un minuto" },
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} g" },
+
+                    { SettingsMenu, "Impostazioni…" },
+                    { Refresh, "Aggiorna ora" },
+                    { Exit, "Esci" },
+
+                    { SettingsTitle, "Impostazioni di TaskbarBattery" },
+                    { SectionTrayIcon, "Icona nell'area di notifica" },
+                    { StyleTitle, "Stile dell'icona" },
+                    { StyleDescription, "Come appare l'icona accanto all'orologio" },
+                    { StyleBattery, "Batteria" },
+                    { StylePercent, "Percentuale" },
+                    { StyleDeviceShort, "Dispositivo" },
                     { OneIconPerDevice, "Un'icona per dispositivo" },
-                    { Devices, "Dispositivi" },
-                    { HiddenDevice, "{0} (nascosto)" },
-                    { Rename, "Rinomina…" },
-                    { Hide, "Nascondi" },
+                    { OneIconDescription, "Un'icona separata per ogni dispositivo connesso" },
+                    { ShownDevice, "Dispositivo mostrato" },
+                    { ShownDeviceDescription, "Il dispositivo che l'icona segue" },
+                    { AutomaticLowest, "Automatico (batteria più bassa)" },
                     { Notifications, "Notifiche" },
                     { NotifyLow, "Batteria scarica" },
+                    { NotifyLowDescription, "Una volta per ciclo di scarica, alla soglia qui sotto" },
                     { NotifyFull, "Carica completa" },
+                    { NotifyFullDescription, "Per i dispositivi che comunicano la carica (Logitech)" },
                     { NotifyConnect, "Dispositivo connesso" },
                     { NotifyDisconnect, "Dispositivo disconnesso" },
-                    { LowThreshold, "Soglia batteria scarica" },
-                    { SendTestNotification, "Invia una notifica di prova" },
+                    { LowThreshold, "Soglia di batteria scarica" },
+                    { LowThresholdDescription, "Da questo livello in giù la batteria diventa rossa" },
+                    { TestNotification, "Notifica di prova" },
+                    { TestNotificationDescription, "Controlla che Windows mostri le notifiche" },
+                    { Send, "Invia" },
+                    { Devices, "Dispositivi" },
+                    { RenameButton, "Rinomina" },
+                    { Visible, "Visibile" },
+                    { SectionGeneral, "Generale" },
                     { StartWithWindows, "Avvia con Windows" },
-                    { OpenLog, "Apri il log diagnostico" },
+                    { StartWithWindowsDescription, "Apre TaskbarBattery quando accedi" },
+                    { DiagnosticLog, "Log diagnostico" },
+                    { DiagnosticLogDescription, "Cambiamenti ed errori, per capire i problemi" },
+                    { Open, "Apri" },
+
                     { NoticeLowTitle, "{0}: batteria scarica" },
                     { NoticeLowText, "Rimane il {0}%. È ora di caricarlo." },
                     { NoticeFullTitle, "{0} è carico" },
@@ -177,6 +235,7 @@ namespace TaskbarBattery
                     { NoticeDisconnectedText, "Ultimo livello di batteria: {0}%." },
                     { TestNoticeTitle, "TaskbarBattery" },
                     { TestNoticeText, "Le notifiche funzionano." },
+
                     { RenameTitle, "Rinomina dispositivo" },
                     { RenamePrompt, "Nuovo nome per {0}:" },
                     { Save, "Salva" },

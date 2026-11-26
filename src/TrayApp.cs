@@ -10,7 +10,7 @@ namespace TaskbarBattery
 {
     // The application: scans the battery sources, keeps the tray icons and the flyout up to date, listens to
     // HID++ notifications and sends user notifications. The context menu lives in TrayApp.Menu.cs.
-    sealed partial class TrayApp : ApplicationContext
+    sealed partial class TrayApp : ApplicationContext, ISettingsHost
     {
         const int ScanIntervalMs = 30 * 1000;
 
@@ -54,12 +54,13 @@ namespace TaskbarBattery
 
             flyout = new Flyout();
             flyout.RefreshRequested += delegate { Scan(); };
+            flyout.SettingsRequested += delegate { OpenSettings(); };
 
             // Creating the first form installed the Windows Forms context for this thread.
             ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
             menu = new ContextMenuStrip();
-            StyleDropDown(menu, true);
+            MenuStyle.Apply(menu, false);
             menu.Opening += delegate
             {
                 if (flyout.Visible)
@@ -154,6 +155,15 @@ namespace TaskbarBattery
             {
                 string name;
                 device.CustomName = settings.Names.TryGetValue(device.Address, out name) ? name : null;
+
+                // A sleeping device may miss the HID++ query: keep the charging state it last reported (the
+                // listener corrects it as soon as the device sends a notification).
+                if (device.Charge == ChargeState.Unknown)
+                {
+                    BatteryDevice previous = connected.FirstOrDefault(d => d.Address == device.Address);
+                    if (previous != null)
+                        device.Charge = previous.Charge;
+                }
             }
 
             connected = devices;
@@ -343,6 +353,89 @@ namespace TaskbarBattery
             flyout.ShowNear(new Rectangle(Cursor.Position, new Size(1, 1)), Visible, lastScan, lastReadFailed);
         }
 
+        // --- settings window ---
+
+        SettingsWindow settingsWindow;
+
+        void OpenSettings()
+        {
+            if (flyout.Visible)
+                flyout.Hide();
+            if (settingsWindow == null || settingsWindow.IsDisposed)
+            {
+                settingsWindow = new SettingsWindow(this);
+                settingsWindow.FormClosed += delegate { settingsWindow = null; };
+                settingsWindow.Show();
+            }
+            if (settingsWindow.WindowState == FormWindowState.Minimized)
+                settingsWindow.WindowState = FormWindowState.Normal;
+            settingsWindow.Activate();
+        }
+
+        Settings ISettingsHost.Settings
+        {
+            get { return settings; }
+        }
+
+        List<BatteryDevice> ISettingsHost.ConnectedDevices
+        {
+            get { return connected; }
+        }
+
+        void ISettingsHost.ApplyIconSettings()
+        {
+            UpdateIcons(true);
+        }
+
+        void ISettingsHost.ApplyLowThreshold()
+        {
+            BatteryDevice.LowThreshold = settings.LowThreshold;
+            Refresh();
+        }
+
+        bool ISettingsHost.RenameDevice(BatteryDevice device, IWin32Window owner)
+        {
+            using (var dialog = new RenameDialog(device))
+            {
+                if (dialog.ShowDialog(owner) != DialogResult.OK)
+                    return false;
+
+                if (dialog.CustomName == null)
+                    settings.Names.Remove(device.Address);
+                else
+                    settings.Names[device.Address] = dialog.CustomName;
+                settings.Save();
+                Log.Write("Renamed " + device.Name + " to " + (dialog.CustomName ?? "its original name") + ".");
+
+                foreach (BatteryDevice same in connected.Where(d => d.Address == device.Address))
+                    same.CustomName = dialog.CustomName;
+                device.CustomName = dialog.CustomName;
+                Refresh();
+                return true;
+            }
+        }
+
+        void ISettingsHost.SetHidden(string address, bool hidden)
+        {
+            if (hidden)
+                settings.Hidden.Add(address);
+            else
+                settings.Hidden.Remove(address);
+            settings.Save();
+            Log.Write((hidden ? "Hidden: " : "Shown again: ") + address);
+            Refresh();
+        }
+
+        void ISettingsHost.SendTestNotification()
+        {
+            ShowNotice(new Notice
+            {
+                Title = Strings.Get(Strings.TestNoticeTitle),
+                Text = Strings.Get(Strings.TestNoticeText),
+                Icon = ToolTipIcon.Info,
+            });
+        }
+
         void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
             // Theme or accent changes: redraw the icons in the new colours.
@@ -359,6 +452,8 @@ namespace TaskbarBattery
                 listener.Dispose();
             listeners.Clear();
             flyout.Hide();
+            if (settingsWindow != null && !settingsWindow.IsDisposed)
+                settingsWindow.Close();
             mainSlot.Hide();
             DisposeDeviceSlots();
             base.ExitThreadCore();

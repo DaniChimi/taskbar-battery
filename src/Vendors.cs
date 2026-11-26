@@ -28,9 +28,11 @@ namespace TaskbarBattery
             { 0x004C, "Apple" },
             { 0x0075, "Samsung" },
             { 0x01DA, "Logitech" },
+            { 0x02B0, "Nothing" },
         };
 
-        // Looks for "VID&" followed by a two-digit source and a four-digit id in any of the given device ids.
+        // Looks for "VID&" followed by the source and a four-digit id in any of the given device ids: Bluetooth LE ids
+        // have a two-digit source ("VID&02046d"), classic Bluetooth service ids a four-digit one ("VID&000102b0").
         public static string FromDeviceIds(IEnumerable<string> ids)
         {
             if (ids == null)
@@ -42,9 +44,16 @@ namespace TaskbarBattery
                 if (at < 0 || id.Length < at + 10)
                     continue;
 
-                string source = id.Substring(at + 4, 2);
+                int digits = 0;
+                while (at + 4 + digits < id.Length && Uri.IsHexDigit(id[at + 4 + digits]))
+                    digits++;
+                int sourceLength = digits >= 8 ? 4 : 2;
+                if (digits < sourceLength + 4)
+                    continue;
+
+                string source = id.Substring(at + 4 + sourceLength - 2, 2);
                 int vendor;
-                if (!int.TryParse(id.Substring(at + 6, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out vendor))
+                if (!int.TryParse(id.Substring(at + 4 + sourceLength, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out vendor))
                     continue;
 
                 string name;

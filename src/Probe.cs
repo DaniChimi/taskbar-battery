@@ -17,7 +17,8 @@ namespace TaskbarBattery
             {
                 output.WriteLine();
                 output.WriteLine("Bluetooth battery (Windows device properties):");
-                List<BatteryDevice> devices = BluetoothBatterySource.Read();
+                Dictionary<string, string> earbuds = NothingEarbuds.FindDevices();
+                List<BatteryDevice> devices = BluetoothBatterySource.Read(earbuds);
                 if (devices.Count == 0)
                     output.WriteLine("  no device reports a battery level");
 
@@ -51,6 +52,41 @@ namespace TaskbarBattery
                         output.WriteLine("  {0}: no answer", device.Name);
                     else
                         output.WriteLine("  {0}: {1}%  charge={2}  feature={3}", device.Name, reading.Percent, reading.Charge, reading.Feature);
+                }
+
+                output.WriteLine();
+                output.WriteLine("Nothing / CMF earbuds (control channel):");
+                if (earbuds.Count == 0)
+                    output.WriteLine("  no paired earbuds expose the control service");
+                foreach (BatteryDevice device in devices)
+                {
+                    if (!device.IsEarbuds)
+                        continue;
+                    if (!device.IsConnected)
+                    {
+                        output.WriteLine("  {0}: not connected", device.Name);
+                        continue;
+                    }
+                    List<BatteryPart> parts = null;
+                    using (var answered = new System.Threading.ManualResetEvent(false))
+                    using (var listener = new EarbudsBatteryListener(device.Address))
+                    {
+                        listener.Changed += delegate(string address, List<BatteryPart> reported)
+                        {
+                            parts = reported;
+                            answered.Set();
+                        };
+                        answered.WaitOne(TimeSpan.FromSeconds(5));
+                    }
+                    if (parts == null)
+                    {
+                        output.WriteLine("  {0}: no answer", device.Name);
+                        continue;
+                    }
+                    var described = new List<string>();
+                    foreach (BatteryPart part in parts)
+                        described.Add(part.Kind + " " + part.Percent + "%" + (part.IsCharging ? " charging" : ""));
+                    output.WriteLine("  {0}: {1}", device.Name, string.Join(", ", described.ToArray()));
                 }
                 return 0;
             }

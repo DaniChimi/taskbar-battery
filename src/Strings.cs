@@ -26,6 +26,14 @@ namespace TaskbarBattery
         public const string Hours = "hours";
         public const string Days = "days";
 
+        // Earbuds: left bud, right bud and case on one card.
+        public const string PartLeft = "partLeft";
+        public const string PartRight = "partRight";
+        public const string PartCase = "partCase";
+        public const string PartLevel = "partLevel";
+        public const string PartCharging = "partCharging";
+        public const string PartUnknown = "partUnknown";
+
         // Right-click menu.
         public const string SettingsMenu = "settingsMenu";
         public const string Refresh = "refresh";
@@ -111,6 +119,12 @@ namespace TaskbarBattery
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} d" },
+                    { PartLeft, "L" },
+                    { PartRight, "R" },
+                    { PartCase, "Case" },
+                    { PartUnknown, "--%" },
+                    { PartLevel, "{0} {1}%" },
+                    { PartCharging, "{0} {1}% ⚡" },
 
                     { SettingsMenu, "Settings…" },
                     { Refresh, "Refresh now" },
@@ -132,7 +146,7 @@ namespace TaskbarBattery
                     { NotifyLow, "Battery low" },
                     { NotifyLowDescription, "Once per discharge, at the threshold below" },
                     { NotifyFull, "Fully charged" },
-                    { NotifyFullDescription, "For devices that report charging (Logitech)" },
+                    { NotifyFullDescription, "For devices that report charging (Logitech, Nothing and CMF earbuds)" },
                     { NotifyConnect, "Device connected" },
                     { NotifyDisconnect, "Device disconnected" },
                     { LowThreshold, "Low battery threshold" },
@@ -190,6 +204,12 @@ namespace TaskbarBattery
                     { Minutes, "{0} min" },
                     { Hours, "{0} h" },
                     { Days, "{0} g" },
+                    { PartLeft, "S" },
+                    { PartRight, "D" },
+                    { PartCase, "Custodia" },
+                    { PartUnknown, "--%" },
+                    { PartLevel, "{0} {1}%" },
+                    { PartCharging, "{0} {1}% ⚡" },
 
                     { SettingsMenu, "Impostazioni…" },
                     { Refresh, "Aggiorna ora" },
@@ -211,7 +231,7 @@ namespace TaskbarBattery
                     { NotifyLow, "Batteria scarica" },
                     { NotifyLowDescription, "Una volta per ciclo di scarica, alla soglia qui sotto" },
                     { NotifyFull, "Carica completa" },
-                    { NotifyFullDescription, "Per i dispositivi che comunicano la carica (Logitech)" },
+                    { NotifyFullDescription, "Per i dispositivi che comunicano la carica (Logitech, auricolari Nothing e CMF)" },
                     { NotifyConnect, "Dispositivo connesso" },
                     { NotifyDisconnect, "Dispositivo disconnesso" },
                     { LowThreshold, "Soglia di batteria scarica" },

@@ -43,6 +43,12 @@ namespace TaskbarBattery
         [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr SetupDiGetClassDevs(ref Guid classGuid, IntPtr enumerator, IntPtr hwndParent, int flags);
 
+        public const int DIGCF_ALLCLASSES = 0x4;
+
+        // Every device of an enumerator (for example "BTHENUM"), whatever its class.
+        [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern IntPtr SetupDiGetClassDevs(IntPtr classGuid, string enumerator, IntPtr hwndParent, int flags);
+
         [DllImport("setupapi.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SetupDiEnumDeviceInfo(IntPtr deviceInfoSet, int memberIndex, ref SP_DEVINFO_DATA deviceInfoData);
@@ -101,6 +107,52 @@ namespace TaskbarBattery
 
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
+
+        // --- Winsock (Bluetooth RFCOMM) ---
+
+        public const int AF_BTH = 32;
+        public const int SOCK_STREAM = 1;
+        public const int BTHPROTO_RFCOMM = 3;
+        public static readonly IntPtr INVALID_SOCKET = new IntPtr(-1);
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct SOCKADDR_BTH
+        {
+            public ushort addressFamily;
+            public ulong btAddr;
+            public Guid serviceClassId;
+            public uint port;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WSADATA
+        {
+            public short version;
+            public short highVersion;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 400)]
+            public byte[] reserved;
+        }
+
+        [DllImport("ws2_32.dll")]
+        public static extern int WSAStartup(ushort version, out WSADATA data);
+
+        [DllImport("ws2_32.dll")]
+        public static extern int WSAGetLastError();
+
+        [DllImport("ws2_32.dll", SetLastError = true)]
+        public static extern IntPtr socket(int addressFamily, int type, int protocol);
+
+        [DllImport("ws2_32.dll", SetLastError = true)]
+        public static extern int connect(IntPtr s, ref SOCKADDR_BTH address, int length);
+
+        [DllImport("ws2_32.dll", SetLastError = true)]
+        public static extern int send(IntPtr s, byte[] buffer, int length, int flags);
+
+        [DllImport("ws2_32.dll", SetLastError = true)]
+        public static extern int recv(IntPtr s, byte[] buffer, int length, int flags);
+
+        [DllImport("ws2_32.dll")]
+        public static extern int closesocket(IntPtr s);
 
         // --- Console ---
 

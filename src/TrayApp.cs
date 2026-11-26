@@ -38,7 +38,20 @@ namespace TaskbarBattery
         readonly Dictionary<string, HidppBatteryListener> listeners =
             new Dictionary<string, HidppBatteryListener>(StringComparer.OrdinalIgnoreCase);
 
-        // Every connected device, hidden ones included (the Devices menu needs them).
+        // Nothing / CMF earbuds: one listener per connected pair, and the last reading of each, which every scan
+        // applies again (Windows itself has no level for them).
+        readonly Dictionary<string, EarbudsBatteryListener> earbudsListeners =
+            new Dictionary<string, EarbudsBatteryListener>(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, EarbudsReading> earbudsReadings =
+            new Dictionary<string, EarbudsReading>(StringComparer.OrdinalIgnoreCase);
+
+        sealed class EarbudsReading
+        {
+            public List<BatteryPart> Parts;
+            public DateTime Time;
+        }
+
+        // Every connected device, hidden ones included, and earbuds that have not reported yet.
         List<BatteryDevice> connected = new List<BatteryDevice>();
         DateTime lastScan = DateTime.Now;
         bool lastReadFailed;
@@ -80,10 +93,16 @@ namespace TaskbarBattery
             SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         }
 
-        // Connected devices the user has not hidden: what the icons, the flyout and the notifications show.
+        // Connected devices with a battery level, hidden ones included: what the settings window lists.
+        List<BatteryDevice> Reported
+        {
+            get { return connected.Where(d => d.HasReading).ToList(); }
+        }
+
+        // Reported devices the user has not hidden: what the icons, the flyout and the notifications show.
         List<BatteryDevice> Visible
         {
-            get { return connected.Where(d => !settings.Hidden.Contains(d.Address)).ToList(); }
+            get { return Reported.Where(d => !settings.Hidden.Contains(d.Address)).ToList(); }
         }
 
         // --- scanning ---
@@ -118,7 +137,17 @@ namespace TaskbarBattery
 
         static List<BatteryDevice> ReadConnectedDevices()
         {
-            List<BatteryDevice> devices = BluetoothBatterySource.Read().Where(d => d.IsConnected).ToList();
+            Dictionary<string, string> earbuds;
+            try
+            {
+                earbuds = NothingEarbuds.FindDevices();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Earbuds lookup failed: " + ex.Message);
+                earbuds = null;
+            }
+            List<BatteryDevice> devices = BluetoothBatterySource.Read(earbuds).Where(d => d.IsConnected).ToList();
 
             // Logitech devices also report their charging state over HID++.
             List<BatteryDevice> logitech = devices.Where(d => d.Manufacturer == "Logitech").ToList();
@@ -148,6 +177,10 @@ namespace TaskbarBattery
             {
                 string name;
                 device.CustomName = settings.Names.TryGetValue(device.Address, out name) ? name : null;
+
+                EarbudsReading reading;
+                if (device.IsEarbuds && earbudsReadings.TryGetValue(device.Address, out reading))
+                    device.ApplyParts(reading.Parts, reading.Time);
 
                 // A sleeping device may miss the HID++ query: keep the charging state it last reported (the
                 // listener corrects it as soon as the device sends a notification).
@@ -182,7 +215,7 @@ namespace TaskbarBattery
             if (flyout.Visible)
                 flyout.SetData(visible, lastScan, lastReadFailed);
             if (settingsWindow != null && !settingsWindow.IsDisposed)
-                settingsWindow.UpdateDevices(connected, lastReadFailed);
+                settingsWindow.UpdateDevices(Reported, lastReadFailed);
 
             foreach (Notice notice in notifier.Process(visible, settings))
                 ShowNotice(notice);
@@ -197,11 +230,18 @@ namespace TaskbarBattery
                 ? "read failed"
                 : visible.Count == 0
                     ? "no device connected"
-                    : string.Join("; ", visible.Select(d => d.DisplayName + " " + d.Percent + "% " + d.Charge).ToArray());
+                    : string.Join("; ", visible.Select(d => d.DisplayName + " " + d.Percent + "% " + d.Charge + DescribeParts(d)).ToArray());
             if (state == lastLoggedState)
                 return;
             lastLoggedState = state;
             Log.Write("Devices: " + state);
+        }
+
+        static string DescribeParts(BatteryDevice device)
+        {
+            if (device.Parts == null)
+                return string.Empty;
+            return " (" + string.Join(", ", device.Parts.Select(p => p.Kind + " " + p.Percent + "%" + (p.IsCharging ? " charging" : "")).ToArray()) + ")";
         }
 
         // One HID++ listener per connected Logitech device; listeners whose device left (or that ended) are dropped,
@@ -232,6 +272,57 @@ namespace TaskbarBattery
                 };
                 listeners[address] = listener;
             }
+
+            SyncEarbudsListeners();
+        }
+
+        // One listener per connected pair of earbuds. A running listener is asked for a fresh reading at each scan;
+        // readings of earbuds that left are dropped.
+        void SyncEarbudsListeners()
+        {
+            var wanted = new HashSet<string>(
+                connected.Where(d => d.IsEarbuds).Select(d => d.Address),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (string address in earbudsReadings.Keys.Where(a => !wanted.Contains(a)).ToList())
+                earbudsReadings.Remove(address);
+
+            foreach (string address in earbudsListeners.Keys.ToList())
+            {
+                if (!wanted.Contains(address) || !earbudsListeners[address].IsAlive)
+                {
+                    earbudsListeners[address].Dispose();
+                    earbudsListeners.Remove(address);
+                }
+            }
+
+            foreach (string address in wanted)
+            {
+                EarbudsBatteryListener existing;
+                if (earbudsListeners.TryGetValue(address, out existing))
+                {
+                    existing.RequestUpdate();
+                    continue;
+                }
+                var listener = new EarbudsBatteryListener(address);
+                listener.Changed += delegate(string source, List<BatteryPart> parts)
+                {
+                    ui.Post(delegate { OnEarbudsReading(source, parts); }, null);
+                };
+                earbudsListeners[address] = listener;
+            }
+        }
+
+        void OnEarbudsReading(string address, List<BatteryPart> parts)
+        {
+            var reading = new EarbudsReading { Parts = parts, Time = DateTime.Now };
+            earbudsReadings[address] = reading;
+
+            BatteryDevice device = connected.FirstOrDefault(d => string.Equals(d.Address, address, StringComparison.OrdinalIgnoreCase));
+            if (device == null)
+                return;
+            device.ApplyParts(reading.Parts, reading.Time);
+            Refresh();
         }
 
         void OnBatteryNotification(string address, LogitechHidpp.Reading reading)
@@ -321,7 +412,30 @@ namespace TaskbarBattery
 
         static string TooltipLine(BatteryDevice device)
         {
+            if (device.Parts != null)
+            {
+                // Earbuds: every part on one line, as on the card, for example "CMF Buds 2: L 60% · Case --% · R 50%".
+                var parts = new List<string>();
+                foreach (PartKind kind in new[] { PartKind.Left, PartKind.Case, PartKind.Right })
+                {
+                    BatteryPart part = device.Parts.FirstOrDefault(p => p.Kind == kind);
+                    parts.Add(part == null
+                        ? PartLabel(kind) + " " + Strings.Get(Strings.PartUnknown)
+                        : Strings.Format(part.IsCharging ? Strings.PartCharging : Strings.PartLevel, PartLabel(kind), part.Percent));
+                }
+                return device.DisplayName + ": " + string.Join(" · ", parts.ToArray());
+            }
             return Strings.Format(device.IsCharging ? Strings.TooltipCharging : Strings.TooltipLine, device.DisplayName, device.Percent);
+        }
+
+        internal static string PartLabel(PartKind kind)
+        {
+            switch (kind)
+            {
+                case PartKind.Left: return Strings.Get(Strings.PartLeft);
+                case PartKind.Right: return Strings.Get(Strings.PartRight);
+                default: return Strings.Get(Strings.PartCase);
+            }
         }
 
         // Toasts come from the device's own icon when it has an extra one, otherwise from the main icon.
@@ -374,7 +488,7 @@ namespace TaskbarBattery
 
         List<BatteryDevice> ISettingsHost.ConnectedDevices
         {
-            get { return connected; }
+            get { return Reported; }
         }
 
         void ISettingsHost.ApplyIconSettings()
@@ -446,6 +560,9 @@ namespace TaskbarBattery
             foreach (HidppBatteryListener listener in listeners.Values)
                 listener.Dispose();
             listeners.Clear();
+            foreach (EarbudsBatteryListener listener in earbudsListeners.Values)
+                listener.Dispose();
+            earbudsListeners.Clear();
             flyout.Hide();
             if (settingsWindow != null && !settingsWindow.IsDisposed)
                 settingsWindow.Close();

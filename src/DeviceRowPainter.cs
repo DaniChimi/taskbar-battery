@@ -106,25 +106,33 @@ namespace TaskbarBattery
                 DrawAction(g, p, actions.Pencil, actions.PencilHover, PencilGlyph);
             }
 
-            // Second line: the five segments and the percentage; time of the reading on the right.
-            Color on = hidden ? p.Secondary : device.IsLow ? p.Low : p.Bar;
-            int lit = Segments.Lit(device.Percent);
+            // Second line: the five segments and the percentage, time of the reading on the right; for earbuds, the
+            // left bud, the right bud and the case side by side instead.
             float segmentTop = row.Top + Px(38);
-            DrawText(g, DescribeReport(device), secondaryFont, p.Secondary,
-                new RectangleF(textLeft, segmentTop - Px(7), right - textLeft, Px(20)), StringAlignment.Far);
-            float x = textLeft;
-            for (int i = 0; i < Segments.Count; i++)
+            if (device.Parts != null)
             {
-                var segment = new RectangleF(x, segmentTop, Px(SegmentWidth), Px(SegmentHeight));
-                using (GraphicsPath path = Theme.RoundedRect(segment, Px(SegmentHeight) / 2f))
-                using (var fill = new SolidBrush(i < lit ? on : p.Track))
-                {
-                    g.FillPath(fill, path);
-                }
-                x += Px(SegmentWidth) + Px(SegmentGap);
+                DrawParts(g, p, device.Parts, textLeft, right, row.Top, hidden);
             }
-            DrawText(g, Strings.Format(Strings.Percent, device.Percent), percentFont, hidden ? text : device.IsLow ? p.Low : p.Text,
-                new RectangleF(x + Px(6), segmentTop - Px(7), Px(60), Px(20)), StringAlignment.Near);
+            else
+            {
+                Color on = hidden ? p.Secondary : device.IsLow ? p.Low : p.Bar;
+                int lit = Segments.Lit(device.Percent);
+                DrawText(g, DescribeReport(device), secondaryFont, p.Secondary,
+                    new RectangleF(textLeft, segmentTop - Px(7), right - textLeft, Px(20)), StringAlignment.Far);
+                float x = textLeft;
+                for (int i = 0; i < Segments.Count; i++)
+                {
+                    var segment = new RectangleF(x, segmentTop, Px(SegmentWidth), Px(SegmentHeight));
+                    using (GraphicsPath path = Theme.RoundedRect(segment, Px(SegmentHeight) / 2f))
+                    using (var fill = new SolidBrush(i < lit ? on : p.Track))
+                    {
+                        g.FillPath(fill, path);
+                    }
+                    x += Px(SegmentWidth) + Px(SegmentGap);
+                }
+                DrawText(g, Strings.Format(Strings.Percent, device.Percent), percentFont, hidden ? text : device.IsLow ? p.Low : p.Text,
+                    new RectangleF(x + Px(6), segmentTop - Px(7), Px(60), Px(20)), StringAlignment.Near);
+            }
 
             // Third line: maker and how long the device has been connected (and "hidden" when it is).
             var details = new List<string>();
@@ -136,7 +144,81 @@ namespace TaskbarBattery
                 details.Add(Strings.Format(Strings.ConnectedFor, DescribeDuration(DateTime.Now - device.ConnectedSince.Value)));
             if (details.Count > 0)
                 DrawText(g, string.Join(" · ", details.ToArray()), secondaryFont, p.Secondary,
-                    new RectangleF(textLeft, row.Top + Px(52), right - textLeft, Px(18)), StringAlignment.Near);
+                    new RectangleF(textLeft, row.Top + Px(device.Parts != null ? PartDetailsTop : 52), right - textLeft, Px(18)),
+                    StringAlignment.Near);
+        }
+
+        // Earbuds: three equal columns, left bud, case in the middle, right bud. Each column has the same style: the
+        // label and the percentage (with a bolt while charging) above a bar as wide as the column. The columns are
+        // aligned left, centre and right, so the row stays symmetric. A part that did not report (a bud left in the
+        // closed case, a case out of range) keeps its column, dimmed like a disabled control, with "--%" and an
+        // empty bar.
+        const float PartGap = 14f;
+        const float PartTextTop = 34f;
+        const float PartBarTop = 55f;
+        const float PartDetailsTop = 66f;
+
+        // Earbuds rows are taller: the bars sit on a line of their own under the labels.
+        public const float PartsRowHeight = 92f;
+
+        // Height of a device's row, in logical pixels.
+        public static float HeightOf(BatteryDevice device)
+        {
+            return device.Parts != null ? PartsRowHeight : RowHeight;
+        }
+
+        void DrawParts(Graphics g, Palette p, List<BatteryPart> parts, float left, float right, float rowTop, bool hidden)
+        {
+            float column = (right - left - 2 * Px(PartGap)) / 3f;
+            Color dimText = Theme.Mix(p.Secondary, p.Card, 0.45f);
+            Color dimTrack = Theme.Mix(p.Track, p.Card, 0.5f);
+            PartKind[] order = { PartKind.Left, PartKind.Case, PartKind.Right };
+            for (int index = 0; index < order.Length; index++)
+            {
+                PartKind kind = order[index];
+                BatteryPart part = parts.Find(candidate => candidate.Kind == kind);
+                bool known = part != null;
+                float x = left + index * (column + Px(PartGap));
+                bool low = known && !part.IsCharging && part.Percent <= BatteryDevice.LowThreshold;
+                bool charging = known && part.IsCharging;
+
+                // Label and percentage, measured together so the pair can be aligned as one piece.
+                string label = TrayApp.PartLabel(kind);
+                string value = known ? Strings.Format(Strings.Percent, part.Percent) : Strings.Get(Strings.PartUnknown);
+                float labelWidth = g.MeasureString(label, secondaryFont).Width;
+                float valueWidth = g.MeasureString(value, percentFont).Width;
+                float boltWidth = charging ? Px(11) : 0;
+                float textWidth = labelWidth + valueWidth + boltWidth;
+                float textLeft = index == 0 ? x : index == 1 ? x + (column - textWidth) / 2f : x + column - textWidth;
+
+                float textTop = rowTop + Px(PartTextTop);
+                float textHeight = Px(18);
+                DrawText(g, label, secondaryFont, known ? p.Secondary : dimText,
+                    new RectangleF(textLeft, textTop, labelWidth, textHeight), StringAlignment.Near);
+                DrawText(g, value, percentFont, !known ? dimText : hidden ? p.Secondary : low ? p.Low : p.Text,
+                    new RectangleF(textLeft + labelWidth, textTop, valueWidth, textHeight), StringAlignment.Near);
+                if (charging)
+                {
+                    DrawText(g, "", boltFont, hidden ? p.Secondary : p.Bar,
+                        new RectangleF(textLeft + labelWidth + valueWidth - Px(3), textTop, boltWidth + Px(3), textHeight),
+                        StringAlignment.Center);
+                }
+
+                var track = new RectangleF(x, rowTop + Px(PartBarTop), column, Px(SegmentHeight));
+                using (GraphicsPath path = Theme.RoundedRect(track, Px(SegmentHeight) / 2f))
+                using (var fill = new SolidBrush(known ? p.Track : dimTrack))
+                    g.FillPath(fill, path);
+                if (!known)
+                    continue;
+                float filled = column * part.Percent / 100f;
+                if (filled >= 1f)
+                {
+                    var level = new RectangleF(x, track.Y, Math.Max(filled, Px(SegmentHeight)), Px(SegmentHeight));
+                    using (GraphicsPath path = Theme.RoundedRect(level, Px(SegmentHeight) / 2f))
+                    using (var fill = new SolidBrush(hidden ? p.Secondary : low ? p.Low : p.Bar))
+                        g.FillPath(fill, path);
+                }
+            }
         }
 
         // A small glyph button: secondary colour at rest, a rounded highlight and full colour on hover.
@@ -332,7 +414,10 @@ namespace TaskbarBattery
 
         void UpdateHeight()
         {
-            Height = painter.Px(DeviceRowPainter.RowHeight * Math.Max(1, devices.Count));
+            float total = 0;
+            foreach (BatteryDevice device in devices)
+                total += DeviceRowPainter.HeightOf(device);
+            Height = painter.Px(devices.Count == 0 ? DeviceRowPainter.RowHeight : total);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -358,9 +443,12 @@ namespace TaskbarBattery
                 painter.DrawEmpty(g, p, new Rectangle(0, 0, Width, rowHeight), readFailed);
                 return;
             }
+            float top = 0;
             for (int i = 0; i < devices.Count; i++)
             {
-                var row = new Rectangle(0, i * rowHeight, Width, rowHeight);
+                float height = DeviceRowPainter.HeightOf(devices[i]);
+                var row = new Rectangle(0, painter.Px(top), Width, painter.Px(top + height) - painter.Px(top));
+                top += height;
                 if (i > 0)
                     painter.DrawDivider(g, p, row);
                 painter.Draw(g, p, row, devices[i], i < actions.Length ? actions[i] : null);

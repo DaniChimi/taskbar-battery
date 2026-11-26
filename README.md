@@ -12,6 +12,10 @@ Shows the battery level of your wireless devices in the Windows notification are
 - **Logitech devices, more detail.** Over Logitech's HID++ protocol the app also reads the charging state and a fresher
   level. It keeps the device's HID++ channel open and waits for the device's own battery notifications, so plugging or
   unplugging the cable shows up immediately, with no polling.
+- **Nothing and CMF earbuds.** Windows gets no battery level from them, so the app reads it over the earbuds' own
+  control channel (the Bluetooth service the Nothing X app uses): left bud, right bud and case, each with its
+  charging state, on a single card. The channel stays open and the earbuds report changes themselves. Any model that
+  exposes that service is recognised, whatever its name.
 - Only connected devices are shown.
 
 ## The tray icon
@@ -25,7 +29,8 @@ from the right-click menu:
 
 With **One icon per device**, every connected device gets its own icon. The level turns red at the low-battery
 threshold (20% by default). Click the icon for the panel with every connected device: a five-segment meter, the
-percentage, the charging state (Logitech), the maker and how long it has been connected.
+percentage, the charging state (Logitech), the maker and how long it has been connected. Earbuds show both buds with
+their own bar, and the case below; the icon follows the emptier bud.
 
 ## Settings
 
@@ -33,13 +38,13 @@ Open them from the gear at the top right of the panel, or with **Settings…** i
 **Refresh now** and **Exit**). Changes apply at once.
 
 - **Tray icon**: icon style, one icon per device, which device the single icon follows.
-- **Notifications**: low battery (once per discharge), fully charged (Logitech), device connected or disconnected,
+- **Notifications**: low battery (once per discharge), fully charged (Logitech, earbuds), device connected or disconnected,
   each on or off, with a low-battery threshold from 10% to 30% and a test notification.
 - **Devices**: rename a device or hide it from the icon, the panel and the notifications.
 - **General**: start with Windows (per-user startup list) and the diagnostic log,
   `%LOCALAPPDATA%\TaskbarBattery\log.txt`, which records changes and errors only.
 
-Tested with: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth).
+Tested with: Logitech MX Master 4 (Bluetooth), Xbox Wireless Controller (Bluetooth), CMF Buds 2.
 
 ## Requirements
 
@@ -59,7 +64,8 @@ It uses the C# compiler that ships with Windows; no SDK or IDE is needed.
 TaskbarBattery.exe --probe | Out-String
 ```
 
-prints every device that reports a battery level, the Logitech HID collections, and what HID++ answers.
+prints every device that reports a battery level, the Logitech HID collections, what HID++ answers, and what the
+connected Nothing / CMF earbuds report.
 Settings are stored in `%APPDATA%\TaskbarBattery\settings.txt`.
 
 ## License

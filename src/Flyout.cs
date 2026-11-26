@@ -96,7 +96,10 @@ namespace TaskbarBattery
 
         float TotalHeight()
         {
-            return HeaderHeight + Math.Max(1, devices.Count) * RowHeight + ListBottomPadding + FooterHeight;
+            float rows = devices.Count == 0 ? RowHeight : 0;
+            foreach (BatteryDevice device in devices)
+                rows += DeviceRowPainter.HeightOf(device);
+            return HeaderHeight + rows + ListBottomPadding + FooterHeight;
         }
 
         void UpdateScale()
@@ -158,7 +161,11 @@ namespace TaskbarBattery
 
         Rectangle RowRect(int index)
         {
-            return new Rectangle(0, Px(HeaderHeight + index * RowHeight), Width, Px(RowHeight));
+            float top = HeaderHeight;
+            for (int i = 0; i < index && i < devices.Count; i++)
+                top += DeviceRowPainter.HeightOf(devices[i]);
+            float height = index < devices.Count ? DeviceRowPainter.HeightOf(devices[index]) : RowHeight;
+            return new Rectangle(0, Px(top), Width, Px(top + height) - Px(top));
         }
 
         void DrawFooter(Graphics g, Palette p, Font secondaryFont, Font glyphFont)

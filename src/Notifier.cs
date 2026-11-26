@@ -23,7 +23,12 @@ namespace TaskbarBattery
     {
         const int RearmMargin = 5;
 
+        // Earbuds report a moment after the first scan, through their own channel: devices that appear this soon
+        // after start were already there and get no "connected" notice.
+        static readonly TimeSpan StartupWindow = TimeSpan.FromSeconds(15);
+
         readonly Dictionary<string, State> states = new Dictionary<string, State>(StringComparer.OrdinalIgnoreCase);
+        readonly DateTime createdAt = DateTime.Now;
         bool initialized;
 
         public List<Notice> Process(List<BatteryDevice> devices, Settings settings)
@@ -40,7 +45,7 @@ namespace TaskbarBattery
                     // A device already full when first seen does not get a "fully charged" notice.
                     state = new State { FullNotified = device.Charge == ChargeState.Full };
                     states[device.Address] = state;
-                    if (initialized && settings.NotifyConnect)
+                    if (initialized && settings.NotifyConnect && DateTime.Now - createdAt > StartupWindow)
                         notices.Add(Make(device, Strings.NoticeConnectedTitle, Strings.NoticeConnectedText, ToolTipIcon.Info));
                 }
                 state.Name = device.DisplayName;

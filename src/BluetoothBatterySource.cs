@@ -37,8 +37,10 @@ namespace TaskbarBattery
         static readonly Native.DEVPROPKEY FriendlyName = new Native.DEVPROPKEY("a45c254e-df1c-4efd-8020-67d146a850e0", 14);
         static readonly Native.DEVPROPKEY DeviceName = new Native.DEVPROPKEY("b725f130-47ef-101a-a5f1-02608c9ebac0", 10);
 
-        // Returns every paired device that reports a battery level, connected or not.
-        public static List<BatteryDevice> Read()
+        // Returns every paired device that reports a battery level, connected or not, plus the given earbuds
+        // (address -> id of their control service node), which Windows has no level for: their level comes later
+        // from their own channel.
+        public static List<BatteryDevice> Read(Dictionary<string, string> earbuds)
         {
             var byAddress = new Dictionary<string, BatteryDevice>(StringComparer.OrdinalIgnoreCase);
             Guid classGuid = BluetoothClass;
@@ -55,7 +57,7 @@ namespace TaskbarBattery
                     if (!Native.SetupDiEnumDeviceInfo(set, index, ref data))
                         break;
 
-                    BatteryDevice device = ReadDevice(set, ref data);
+                    BatteryDevice device = ReadDevice(set, ref data, earbuds);
                     if (device == null)
                         continue;
 
@@ -75,15 +77,18 @@ namespace TaskbarBattery
                 .ToList();
         }
 
-        static BatteryDevice ReadDevice(IntPtr set, ref Native.SP_DEVINFO_DATA data)
+        static BatteryDevice ReadDevice(IntPtr set, ref Native.SP_DEVINFO_DATA data, Dictionary<string, string> earbuds)
         {
             string instanceId = GetInstanceId(set, ref data);
             string address = ParseAddress(instanceId);
             if (address == null)
                 return null;
 
+            string controlService = null;
+            bool isEarbuds = earbuds != null && earbuds.TryGetValue(address, out controlService);
+
             byte[] level = GetProperty(set, ref data, BatteryLevel, Native.DEVPROP_TYPE_BYTE);
-            if (level == null || level.Length < 1)
+            if ((level == null || level.Length < 1) && !isEarbuds)
                 return null;
 
             DateTime? updated = GetFileTime(set, ref data, BatteryUpdated);
@@ -99,8 +104,20 @@ namespace TaskbarBattery
             string name = GetString(set, ref data, FriendlyName) ?? GetString(set, ref data, DeviceName) ?? address;
             DateTime? connectedSince = connected ? GetFileTime(set, ref data, LastConnected) : null;
             string manufacturer = Vendors.FromDeviceIds(GetStringList(set, ref data, Children));
+            DeviceKind kind = BatteryDevice.KindFromCategory(category);
 
-            return new BatteryDevice(address, name, instanceId, BatteryDevice.KindFromCategory(category),
+            if (isEarbuds)
+            {
+                // Classic Bluetooth nodes list no children: the vendor id is on the control service node.
+                if (manufacturer == null)
+                    manufacturer = Vendors.FromDeviceIds(new[] { controlService });
+                var buds = new BatteryDevice(address, name, instanceId, kind == DeviceKind.Other ? DeviceKind.Headphones : kind,
+                    0, null, connected, connectedSince, manufacturer);
+                buds.IsEarbuds = true;
+                return buds;
+            }
+
+            return new BatteryDevice(address, name, instanceId, kind,
                 level[0], updated, connected, connectedSince, manufacturer);
         }
 
@@ -122,6 +139,9 @@ namespace TaskbarBattery
 
         static bool IsBetter(BatteryDevice candidate, BatteryDevice current)
         {
+            // Earbuds read their own channel: that node wins over a twin that only has the Windows level.
+            if (candidate.IsEarbuds != current.IsEarbuds)
+                return candidate.IsEarbuds;
             if (candidate.IsConnected != current.IsConnected)
                 return candidate.IsConnected;
             DateTime a = candidate.LastUpdated ?? DateTime.MinValue;

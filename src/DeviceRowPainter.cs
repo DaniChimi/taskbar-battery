@@ -24,6 +24,10 @@ namespace TaskbarBattery
         readonly Font secondaryFont;
         readonly Font glyphFont;
         readonly Font boltFont;
+        readonly Font connectionFont;
+
+        // Room for the connection glyph at the right end of the first line.
+        const float ConnectionColumn = 16f;
 
         public DeviceRowPainter(float scale)
         {
@@ -33,6 +37,7 @@ namespace TaskbarBattery
             secondaryFont = new Font(Theme.TextFont, 12f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
             glyphFont = new Font(Theme.GlyphFont, 20f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
             boltFont = new Font(Theme.GlyphFont, 12f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
+            connectionFont = new Font(Theme.GlyphFont, 13f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         }
 
         public int Px(float logical)
@@ -91,9 +96,16 @@ namespace TaskbarBattery
             DrawText(g, Theme.Glyph(device.Kind), glyphFont, text,
                 new RectangleF(left, row.Top, Px(GlyphColumn) - Px(8), row.Height), StringAlignment.Center);
 
-            // First line: name on the left (then the pencil in edit mode), charging state on the right.
+            // First line: name on the left (then the pencil in edit mode); on the right the connection glyph, and the
+            // charging state just before it.
             var firstLine = new RectangleF(textLeft, row.Top + Px(10), right - textLeft, Px(20));
+            float connectionWidth = Px(ConnectionColumn);
+            DrawText(g, Theme.ConnectionGlyph(device.Connection), connectionFont, p.Secondary,
+                new RectangleF(firstLine.Right - connectionWidth, firstLine.Y, connectionWidth, firstLine.Height), StringAlignment.Far);
+            firstLine.Width -= connectionWidth + Px(6);
             float chargeWidth = hidden ? 0 : DrawChargeState(g, p, device, firstLine);
+            chargeWidth += connectionWidth + Px(6);
+            firstLine.Width += connectionWidth + Px(6);
             float nameRoom = firstLine.Width - chargeWidth - Px(8) - (actions != null ? Px(ActionSize) : 0);
             float nameWidth = Math.Min(nameRoom, g.MeasureString(device.DisplayName, nameFont).Width);
             DrawText(g, device.DisplayName, nameFont, text,
@@ -308,6 +320,7 @@ namespace TaskbarBattery
             secondaryFont.Dispose();
             glyphFont.Dispose();
             boltFont.Dispose();
+            connectionFont.Dispose();
         }
     }
 

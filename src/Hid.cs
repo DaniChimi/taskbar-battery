@@ -17,6 +17,18 @@ namespace TaskbarBattery
         public ushort Usage;
         public int InputReportLength;
         public int OutputReportLength;
+
+        // Product name the device reports over USB, if any.
+        public string Product;
+
+        // Collections of the same USB interface share this key: the path without the collection parts.
+        public string InterfaceKey;
+
+        // A collection of a USB device (receiver or cable), as opposed to a Bluetooth one.
+        public bool IsUsb
+        {
+            get { return Path.ToLowerInvariant().Contains("hid#vid_"); }
+        }
     }
 
     // Enumerates HID collections and opens them for report I/O.
@@ -118,8 +130,35 @@ namespace TaskbarBattery
                         HidD_FreePreparsedData(preparsed);
                     }
                 }
+
+                var product = new System.Text.StringBuilder(128);
+                if (HidD_GetProductString(handle, product, product.Capacity * 2))
+                    collection.Product = product.ToString().Trim();
+                collection.InterfaceKey = InterfaceKeyOf(path);
                 return collection;
             }
+        }
+
+        // \\?\hid#vid_046d&pid_c548&mi_02&col02#8&2f3d1a&0&0001#{guid}: dropping "&colNN" and the trailing
+        // collection number leaves a key shared by every collection of the same USB interface.
+        static string InterfaceKeyOf(string path)
+        {
+            string p = path.ToLowerInvariant();
+            int col = p.IndexOf("&col", StringComparison.Ordinal);
+            if (col >= 0)
+            {
+                int end = p.IndexOf('#', col);
+                if (end > col)
+                    p = p.Remove(col, end - col);
+            }
+            string[] parts = p.Split('#');
+            if (parts.Length >= 3)
+            {
+                int amp = parts[2].LastIndexOf('&');
+                if (amp > 0)
+                    parts[2] = parts[2].Substring(0, amp);
+            }
+            return string.Join("#", parts);
         }
 
         public static HidStream Open(HidCollection collection)
@@ -198,6 +237,10 @@ namespace TaskbarBattery
 
         [DllImport("hid.dll")]
         static extern int HidP_GetCaps(IntPtr preparsedData, out HIDP_CAPS capabilities);
+
+        [DllImport("hid.dll", CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        static extern bool HidD_GetProductString(SafeFileHandle device, System.Text.StringBuilder buffer, int bufferBytes);
 
         [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr SetupDiGetClassDevs(ref Guid classGuid, IntPtr enumerator, IntPtr hwndParent, int flags);

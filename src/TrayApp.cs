@@ -45,6 +45,9 @@ namespace TaskbarBattery
         readonly Dictionary<string, EarbudsReading> earbudsReadings =
             new Dictionary<string, EarbudsReading>(StringComparer.OrdinalIgnoreCase);
 
+        // Logitech devices on USB receivers, cables and dongles; Bluetooth ones are read through Windows and HID++ above.
+        readonly LogitechUsbMonitor logitechUsb;
+
         sealed class EarbudsReading
         {
             public List<BatteryPart> Parts;
@@ -66,7 +69,7 @@ namespace TaskbarBattery
             Autostart.RefreshPath();
 
             flyout = new Flyout();
-            flyout.RefreshRequested += delegate { Scan(); };
+            flyout.RefreshRequested += delegate { RefreshNow(); };
             flyout.SettingsRequested += delegate { OpenSettings(); };
 
             // Creating the first form installed the Windows Forms context for this thread.
@@ -82,6 +85,9 @@ namespace TaskbarBattery
                 animationFrame = (animationFrame + 1) % TrayIconRenderer.AnimationFrames;
                 UpdateIcons(false);
             };
+
+            logitechUsb = new LogitechUsbMonitor();
+            logitechUsb.Changed += delegate { ui.Post(delegate { ApplyLogitechUsb(); }, null); };
 
             UpdateIcons(true);
             Scan();
@@ -107,6 +113,13 @@ namespace TaskbarBattery
 
         // --- scanning ---
 
+        // The refresh button and menu item: read every device now, USB ones included.
+        void RefreshNow()
+        {
+            logitechUsb.Refresh();
+            Scan();
+        }
+
         // Reads on a worker thread (a sleeping device can take a moment to answer HID++) and applies on the UI thread.
         void Scan()
         {
@@ -116,6 +129,7 @@ namespace TaskbarBattery
                 return;
             }
             scanning = true;
+            logitechUsb.Rescan();
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -124,6 +138,7 @@ namespace TaskbarBattery
                 try
                 {
                     result = ReadConnectedDevices();
+                    result.AddRange(logitechUsb.Devices());
                 }
                 catch (Exception ex)
                 {
@@ -149,8 +164,8 @@ namespace TaskbarBattery
             }
             List<BatteryDevice> devices = BluetoothBatterySource.Read(earbuds).Where(d => d.IsConnected).ToList();
 
-            // Logitech devices also report their charging state over HID++.
-            List<BatteryDevice> logitech = devices.Where(d => d.Manufacturer == "Logitech").ToList();
+            // Logitech Bluetooth devices also report their charging state over HID++.
+            List<BatteryDevice> logitech = devices.Where(IsLogitechBluetooth).ToList();
             if (logitech.Count > 0)
             {
                 List<HidCollection> collections = Hid.Enumerate(LogitechHidpp.LogitechVendorId);
@@ -249,7 +264,7 @@ namespace TaskbarBattery
         void SyncListeners()
         {
             var wanted = new HashSet<string>(
-                connected.Where(d => d.Manufacturer == "Logitech").Select(d => d.Address),
+                connected.Where(IsLogitechBluetooth).Select(d => d.Address),
                 StringComparer.OrdinalIgnoreCase);
 
             foreach (string address in listeners.Keys.ToList())
@@ -311,6 +326,31 @@ namespace TaskbarBattery
                 };
                 earbudsListeners[address] = listener;
             }
+        }
+
+        // Logitech devices from the USB monitor carry ids of their own ("LOGI-..."), not a Bluetooth address.
+        static bool IsLogitechUsb(BatteryDevice device)
+        {
+            return device.Address.StartsWith("LOGI-", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsLogitechBluetooth(BatteryDevice device)
+        {
+            return device.Manufacturer == "Logitech" && !IsLogitechUsb(device);
+        }
+
+        // The USB monitor saw a change (a reading, a device connecting or leaving): swap its devices into the list
+        // without waiting for the next scan.
+        void ApplyLogitechUsb()
+        {
+            List<BatteryDevice> usb = logitechUsb.Devices();
+            foreach (BatteryDevice device in usb)
+            {
+                string name;
+                device.CustomName = settings.Names.TryGetValue(device.Address, out name) ? name : null;
+            }
+            connected = connected.Where(d => !IsLogitechUsb(d)).Concat(usb).ToList();
+            Refresh();
         }
 
         void OnEarbudsReading(string address, List<BatteryPart> parts)
@@ -563,6 +603,7 @@ namespace TaskbarBattery
             foreach (EarbudsBatteryListener listener in earbudsListeners.Values)
                 listener.Dispose();
             earbudsListeners.Clear();
+            logitechUsb.Dispose();
             flyout.Hide();
             if (settingsWindow != null && !settingsWindow.IsDisposed)
                 settingsWindow.Close();

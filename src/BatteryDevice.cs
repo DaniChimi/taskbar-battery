@@ -8,6 +8,9 @@ namespace TaskbarBattery
 
     enum ChargeState { Unknown, Discharging, Charging, Full }
 
+    // How the device reaches the PC: Bluetooth, a wireless receiver or dongle (2.4 GHz), or a USB cable.
+    enum ConnectionKind { Bluetooth, Receiver, Usb }
+
     // The batteries of a device made of several pieces, such as true wireless earbuds.
     enum PartKind { Left, Right, Case }
 
@@ -58,6 +61,9 @@ namespace TaskbarBattery
         public DateTime? LastUpdated { get; private set; }
 
         public bool IsConnected { get; private set; }
+
+        // Bluetooth unless the source says otherwise.
+        public ConnectionKind Connection { get; set; }
 
         // Local time of the current connection, if known.
         public DateTime? ConnectedSince { get; private set; }

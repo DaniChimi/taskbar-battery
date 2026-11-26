@@ -15,7 +15,7 @@ namespace TaskbarBattery
         {
             menu.Items.Clear();
             menu.Items.Add(MenuAction(Strings.Get(Strings.SettingsMenu), "", OpenSettings));
-            menu.Items.Add(MenuAction(Strings.Get(Strings.Refresh), Theme.RefreshGlyph, Scan));
+            menu.Items.Add(MenuAction(Strings.Get(Strings.Refresh), Theme.RefreshGlyph, RefreshNow));
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(MenuAction(Strings.Get(Strings.Exit), "", ExitThread));
             MenuStyle.SpaceItems(menu.Items);

@@ -88,6 +88,28 @@ namespace TaskbarBattery
                         described.Add(part.Kind + " " + part.Percent + "%" + (part.IsCharging ? " charging" : ""));
                     output.WriteLine("  {0}: {1}", device.Name, string.Join(", ", described.ToArray()));
                 }
+
+                output.WriteLine();
+                output.WriteLine("Logitech USB (receivers, cables, dongles):");
+                int usbInterfaces = collections.FindAll(c => c.IsUsb).Count;
+                if (usbInterfaces == 0)
+                {
+                    output.WriteLine("  no Logitech USB device or receiver plugged in");
+                }
+                else
+                {
+                    using (var monitor = new LogitechUsbMonitor())
+                    {
+                        // Discovery and the first readings run on the monitor's thread; sleeping devices take a while.
+                        System.Threading.Thread.Sleep(8000);
+                        List<BatteryDevice> usb = monitor.Devices();
+                        if (usb.Count == 0)
+                            output.WriteLine("  no device answered (see the log for details)");
+                        foreach (BatteryDevice device in usb)
+                            output.WriteLine("  {0}: {1}%  charge={2}  kind={3}  id={4}",
+                                device.Name, device.Percent, device.Charge, device.Kind, device.Address);
+                    }
+                }
                 return 0;
             }
             catch (Exception ex)

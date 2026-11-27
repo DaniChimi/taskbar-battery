@@ -2,8 +2,8 @@
 
 Shows the battery level of your wireless mouse, keyboard, headset and earbuds in the Windows 11 taskbar (system tray),
 whatever the brand: Bluetooth devices, Logitech devices on Bluetooth or on a Bolt, Unifying or LIGHTSPEED receiver
-(MX Master, MX Keys, G series), and Nothing / CMF earbuds with left, right and case. Charging state, low battery
-notifications, no vendor software (no Logi Options+, G HUB or Nothing X) needed.
+(MX Master, MX Keys, G series), Nothing / CMF earbuds and AirPods with left, right and case. Charging state, low
+battery notifications, no vendor software (no Logi Options+, G HUB or Nothing X) needed.
 
 [Italiano](README.it.md)
 
@@ -54,6 +54,10 @@ notifications, no vendor software (no Logi Options+, G HUB or Nothing X) needed.
   control channel (the Bluetooth service the Nothing X app uses): left bud, right bud and case, each with its
   charging state, on a single card. The channel stays open and the earbuds report changes themselves. Any model that
   exposes that service is recognised, whatever its name.
+- **AirPods and Beats.** Windows shows at most one level for them. The app listens to the Bluetooth messages they
+  broadcast while out of the case or with the lid open, the same ones an iPhone uses for its pop-up: left, right and
+  case, in steps of 10%, with charging state, on the same kind of card. Nothing is sent to the earbuds, and with the
+  case closed the card keeps the last reading.
 - Only connected devices are shown.
 
 ## The tray icon
@@ -113,6 +117,15 @@ Open them from the gear at the top right of the panel, or with **Settings…** i
 | Over-ear headphones (CMF Headphone Pro, Nothing Headphone (1)) | ⚪ | Probably the same channel, but the battery may use other ids. |
 | CMF Watch | ❌ | Different protocol. |
 
+**Apple and Beats**
+
+| Device | Status | Notes |
+|---|---|---|
+| AirPods (2nd to 4th generation), AirPods Pro, Pro 2 and Pro 3 | 🟡 | Left, right and case from their Bluetooth messages, in steps of 10%. Not yet tested on a real pair. |
+| AirPods Max | 🟡 | One level, same messages. |
+| Beats earbuds and headphones (Studio Buds, Fit Pro, Solo, Studio…) | ⚪ | They send the same kind of messages; not verified. |
+| Two pairs of the same model connected at once | ❌ | The messages do not say which pair sent them, so neither gets a reading. |
+
 **Other brands**
 
 | Device | Status | Notes |
@@ -141,7 +154,8 @@ TaskbarBattery.exe --probe | Out-String
 ```
 
 prints every device that reports a battery level, the Logitech HID collections, what HID++ answers, what the
-connected Nothing / CMF earbuds report, and the Logitech devices found on receivers, cables and dongles.
+connected Nothing / CMF earbuds report, the AirPods and Beats messages heard in 10 seconds, and the Logitech
+devices found on receivers, cables and dongles.
 Settings are stored in `%APPDATA%\TaskbarBattery\settings.txt`.
 
 ## License

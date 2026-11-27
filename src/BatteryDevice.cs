@@ -96,9 +96,28 @@ namespace TaskbarBattery
         // Left bud, right bud and case, for earbuds; null for single-battery devices.
         public List<BatteryPart> Parts { get; private set; }
 
+        // Set when the level is already known before the earbuds' own channel reports, for example the level Windows
+        // stores for AirPods.
+        public bool HasLevel { get; set; }
+
         public bool HasReading
         {
-            get { return !IsEarbuds || Parts != null; }
+            get { return !IsEarbuds || Parts != null || HasLevel; }
+        }
+
+        // Product id of the Device ID record (Apple and Beats models), or 0 when not known.
+        public int ProductId { get; set; }
+
+        // Applies a single level read from the earbuds' own channel (over-ear models with one battery).
+        public void ApplyLevel(int percent, bool charging, DateTime time)
+        {
+            Percent = Math.Max(0, Math.Min(100, percent));
+            LastUpdated = time;
+            HasLevel = true;
+            if (charging)
+                Charge = Percent >= 100 ? ChargeState.Full : ChargeState.Charging;
+            else
+                Charge = ChargeState.Discharging;
         }
 
         // Applies an earbuds reading. The device level is the emptier bud, the one that will stop first (the case

@@ -75,7 +75,7 @@ namespace TaskbarBattery
         }
 
         // A service node id ends with "...&<12-digit address>_C00000000".
-        static string ParseServiceAddress(string instanceId)
+        internal static string ParseServiceAddress(string instanceId)
         {
             int amp = instanceId.LastIndexOf('&');
             if (amp < 0 || instanceId.Length < amp + 13)

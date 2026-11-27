@@ -18,6 +18,9 @@ namespace TaskbarBattery
                 output.WriteLine();
                 output.WriteLine("Bluetooth battery (Windows device properties):");
                 Dictionary<string, string> earbuds = NothingEarbuds.FindDevices();
+                Dictionary<string, string> apple = AppleEarbuds.FindDevices();
+                foreach (KeyValuePair<string, string> pair in apple)
+                    earbuds[pair.Key] = pair.Value;
                 List<BatteryDevice> devices = BluetoothBatterySource.Read(earbuds);
                 if (devices.Count == 0)
                     output.WriteLine("  no device reports a battery level");
@@ -60,7 +63,7 @@ namespace TaskbarBattery
                     output.WriteLine("  no paired earbuds expose the control service");
                 foreach (BatteryDevice device in devices)
                 {
-                    if (!device.IsEarbuds)
+                    if (!device.IsEarbuds || apple.ContainsKey(device.Address))
                         continue;
                     if (!device.IsConnected)
                     {
@@ -90,6 +93,19 @@ namespace TaskbarBattery
                 }
 
                 output.WriteLine();
+                output.WriteLine("AirPods and Beats (Bluetooth advertisements):");
+                if (apple.Count == 0)
+                    output.WriteLine("  no paired Apple or Beats audio device");
+                foreach (BatteryDevice device in devices)
+                {
+                    if (apple.ContainsKey(device.Address))
+                        output.WriteLine("  {0}: model 0x{1:X4}  connected={2}  Windows level={3}",
+                            device.Name, device.ProductId, device.IsConnected, device.HasLevel ? device.Percent + "%" : "none");
+                }
+                if (apple.Count > 0)
+                    ProbeAppleAdvertisements(output);
+
+                output.WriteLine();
                 output.WriteLine("Logitech USB (receivers, cables, dongles):");
                 int usbInterfaces = collections.FindAll(c => c.IsUsb).Count;
                 if (usbInterfaces == 0)
@@ -116,6 +132,42 @@ namespace TaskbarBattery
             {
                 output.WriteLine("Probe failed: " + ex);
                 return 1;
+            }
+        }
+
+        // Prints every Apple proximity message heard in 10 seconds, raw and decoded, so a reading that does not show
+        // can be checked against what the earbuds actually send. Open the case or take the earbuds out meanwhile.
+        static void ProbeAppleAdvertisements(StreamWriter output)
+        {
+            output.WriteLine("  listening for 10 seconds (open the case next to the PC)...");
+            var seen = new HashSet<string>();
+            int heard = 0;
+            try
+            {
+                using (var watcher = new AppleAdvertisementWatcher())
+                {
+                    watcher.Received += delegate(byte[] raw, AppleEarbuds.Advertisement advertisement, ulong sender, short signal)
+                    {
+                        string line = string.Format("  {0} dBm  {1}  {2}", signal, BitConverter.ToString(raw),
+                            advertisement == null ? "(not an audio device)" :
+                                "model 0x" + advertisement.ProductId.ToString("X4") + ": " + AppleEarbuds.Describe(advertisement));
+                        lock (seen)
+                        {
+                            heard++;
+                            // The same message repeats several times a second: print each distinct one once.
+                            if (seen.Add(BitConverter.ToString(raw)))
+                                output.WriteLine(line);
+                        }
+                    };
+                    watcher.Start();
+                    System.Threading.Thread.Sleep(10000);
+                }
+                lock (seen)
+                    output.WriteLine("  {0} messages heard", heard);
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine("  scan unavailable: " + ex.Message);
             }
         }
 

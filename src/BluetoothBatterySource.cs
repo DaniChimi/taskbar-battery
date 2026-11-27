@@ -38,8 +38,8 @@ namespace TaskbarBattery
         static readonly Native.DEVPROPKEY DeviceName = new Native.DEVPROPKEY("b725f130-47ef-101a-a5f1-02608c9ebac0", 10);
 
         // Returns every paired device that reports a battery level, connected or not, plus the given earbuds
-        // (address -> id of their control service node), which Windows has no level for: their level comes later
-        // from their own channel.
+        // (address -> id of one of their service nodes), whose levels come from their own channel: their control
+        // service (Nothing, CMF) or their advertisements (AirPods, Beats).
         public static List<BatteryDevice> Read(Dictionary<string, string> earbuds)
         {
             var byAddress = new Dictionary<string, BatteryDevice>(StringComparer.OrdinalIgnoreCase);
@@ -111,9 +111,13 @@ namespace TaskbarBattery
                 // Classic Bluetooth nodes list no children: the vendor id is on the control service node.
                 if (manufacturer == null)
                     manufacturer = Vendors.FromDeviceIds(new[] { controlService });
+                // A level Windows stored (AirPods report one over Hands-Free) shows until the earbuds' own reading.
+                bool hasLevel = level != null && level.Length >= 1;
                 var buds = new BatteryDevice(address, name, instanceId, kind == DeviceKind.Other ? DeviceKind.Headphones : kind,
-                    0, null, connected, connectedSince, manufacturer);
+                    hasLevel ? level[0] : 0, hasLevel ? updated : null, connected, connectedSince, manufacturer);
                 buds.IsEarbuds = true;
+                buds.HasLevel = hasLevel;
+                buds.ProductId = AppleEarbuds.ProductIdOf(controlService);
                 return buds;
             }
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TaskbarBattery: livello batteria di mouse, tastiera e auricolari su Windows 11</title>
-<meta name="description" content="Vedi la batteria di mouse, tastiera e auricolari Bluetooth accanto all’orologio di Windows 11. Supporta Logitech, Nothing e CMF, con lo stato di carica. Gratis.">
+<meta name="description" content="Vedi la batteria di mouse, tastiera e auricolari Bluetooth accanto all’orologio di Windows 11. Supporta Logitech, Nothing, CMF e AirPods, con lo stato di carica. Gratis.">
 <link rel="canonical" href="https://danichimi.github.io/taskbar-battery/it/">
 <link rel="alternate" hreflang="en" href="https://danichimi.github.io/taskbar-battery/">
 <link rel="alternate" hreflang="it" href="https://danichimi.github.io/taskbar-battery/it/">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TaskbarBattery">
 <meta property="og:title" content="TaskbarBattery: la batteria dei dispositivi nella barra di Windows 11">
-<meta property="og:description" content="Logitech, auricolari Nothing e CMF e qualsiasi dispositivo Bluetooth, con lo stato di carica, in un’app da 153 KB.">
+<meta property="og:description" content="Logitech, auricolari Nothing, CMF e AirPods e qualsiasi dispositivo Bluetooth, con lo stato di carica, in un’app da 153 KB.">
 <meta property="og:url" content="https://danichimi.github.io/taskbar-battery/it/">
 <meta property="og:image" content="https://danichimi.github.io/taskbar-battery/share-it.jpg">
 <meta property="og:locale" content="it_IT">
@@ -25,7 +25,7 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TaskbarBattery",
-  "description": "Mostra il livello di batteria dei dispositivi wireless nell’area di notifica di Windows 11: dispositivi Bluetooth, dispositivi Logitech via HID++ in Bluetooth e su ricevitori Bolt, Unifying e LIGHTSPEED, e auricolari Nothing e CMF con sinistro, destro e custodia.",
+  "description": "Mostra il livello di batteria dei dispositivi wireless nell’area di notifica di Windows 11: dispositivi Bluetooth, dispositivi Logitech via HID++ in Bluetooth e su ricevitori Bolt, Unifying e LIGHTSPEED, e auricolari Nothing, CMF e AirPods con sinistro, destro e custodia.",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Windows 10, Windows 11",
   "softwareVersion": "0.1.0",
@@ -71,10 +71,18 @@
     },
     {
       "@type": "Question",
+      "name": "Come vedo la batteria delle AirPods su Windows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Collegale al PC in Bluetooth e apri la custodia: TaskbarBattery mostra auricolare sinistro, destro e custodia dai messaggi che le AirPods trasmettono, a scatti del 10%."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Perché il mio dispositivo non compare?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Windows deve conoscerne la batteria, oppure deve essere un Logitech, Nothing o CMF. Avvia l’app con --probe e allega l’output a una segnalazione su GitHub."
+        "text": "Windows deve conoscerne la batteria, oppure deve essere un Logitech, Nothing, CMF o Apple. Avvia l’app con --probe e allega l’output a una segnalazione su GitHub."
       }
     },
     {
@@ -235,7 +243,7 @@
     <div class="wrap">
       <p class="eyebrow"><b>Versione 0.1.0</b> · Gratis per Windows 10 e 11</p>
       <h1>Ogni batteria, accanto all’orologio.</h1>
-      <p class="lead">TaskbarBattery mostra nella barra di Windows la carica di mouse, tastiera e auricolari Bluetooth, compresi Logitech e Nothing o CMF.</p>
+      <p class="lead">TaskbarBattery mostra nella barra di Windows la carica di mouse, tastiera e auricolari Bluetooth, compresi Logitech, Nothing, CMF e AirPods.</p>
       <div class="actions">
         <a class="btn btn--primary" href="https://github.com/DaniChimi/taskbar-battery/releases/latest">Scarica per Windows</a>
         <a class="btn btn--ghost" href="https://github.com/DaniChimi/taskbar-battery">Vedi il codice sorgente ›</a>
@@ -258,7 +266,7 @@
           <div class="shot"><img src="../img/site/logitech-it.png" alt="MX Master 4 in Bluetooth, MX Keys S in carica su ricevitore, un mouse in carica via cavo USB" width="680" height="512" loading="lazy"></div>
         </article>
         <article class="card">
-          <h3>Auricolari Nothing e CMF</h3>
+          <h3>Nothing, CMF e AirPods</h3>
           <p>Sinistro, destro e custodia in una sola scheda, che Windows non mostra affatto.</p>
           <div class="shot"><img src="../img/site/earbuds-it.png" alt="CMF Buds 2 con i livelli di sinistro, custodia e destro, e Nothing Ear (a) con la custodia che non comunica" width="680" height="400" loading="lazy"></div>
         </article>
@@ -311,6 +319,8 @@
           <h3>Altre marche</h3>
           <ul>
             <li>Xbox Wireless Controller <em class="ok">Provato</em></li>
+            <li>AirPods, AirPods Pro e Max <em>Dovrebbe funzionare</em></li>
+            <li>Beats <em>Sconosciuto</em></li>
             <li>Servizio batteria Bluetooth <em>Dovrebbe funzionare</em></li>
             <li>Batteria che Windows non legge <em>Non supportato</em></li>
           </ul>
@@ -326,7 +336,8 @@
         <div class="faq__item"><h3>Come vedo la batteria del mouse su Windows 11?</h3><p>Windows la mostra solo in Impostazioni, Bluetooth e dispositivi, e non per tutti. TaskbarBattery la mette accanto all’orologio e ti avvisa quando è scarica.</p></div>
         <div class="faq__item"><h3>Come controllo la batteria Logitech senza Options+?</h3><p>TaskbarBattery la legge con il protocollo HID++ di Logitech, in Bluetooth e sui ricevitori Bolt, Unifying o LIGHTSPEED, con lo stato di carica.</p></div>
         <div class="faq__item"><h3>Come vedo la batteria dei CMF Buds sul PC?</h3><p>Collega gli auricolari al PC in Bluetooth: TaskbarBattery mostra auricolare sinistro, destro e custodia, che Windows non mostra.</p></div>
-        <div class="faq__item"><h3>Perché il mio dispositivo non compare?</h3><p>Windows deve conoscerne la batteria, oppure deve essere un Logitech, Nothing o CMF. Avvia l’app con --probe e allega l’output a una <a href="https://github.com/DaniChimi/taskbar-battery/issues">segnalazione su GitHub</a>.</p></div>
+        <div class="faq__item"><h3>Come vedo la batteria delle AirPods su Windows?</h3><p>Collegale al PC in Bluetooth e apri la custodia: TaskbarBattery mostra auricolare sinistro, destro e custodia dai messaggi che le AirPods trasmettono, a scatti del 10%.</p></div>
+        <div class="faq__item"><h3>Perché il mio dispositivo non compare?</h3><p>Windows deve conoscerne la batteria, oppure deve essere un Logitech, Nothing, CMF o Apple. Avvia l’app con --probe e allega l’output a una <a href="https://github.com/DaniChimi/taskbar-battery/issues">segnalazione su GitHub</a>.</p></div>
         <div class="faq__item"><h3>È sicuro avviarlo?</h3><p>Il codice è aperto su GitHub e l’app non fa richieste di rete. Il file non è ancora firmato, quindi SmartScreen chiede una volta: Ulteriori informazioni, poi Esegui comunque.</p></div>
       </div>
     </div>

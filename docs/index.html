@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TaskbarBattery: battery level of your mouse, keyboard and earbuds on Windows 11</title>
-<meta name="description" content="See the battery of your Bluetooth mouse, keyboard and earbuds next to the Windows 11 clock. Logitech, Nothing and CMF supported, charging state included. Free.">
+<meta name="description" content="See the battery of your Bluetooth mouse, keyboard and earbuds next to the Windows 11 clock. Logitech, Nothing, CMF and AirPods supported, charging state included. Free.">
 <link rel="canonical" href="https://danichimi.github.io/taskbar-battery/">
 <link rel="alternate" hreflang="en" href="https://danichimi.github.io/taskbar-battery/">
 <link rel="alternate" hreflang="it" href="https://danichimi.github.io/taskbar-battery/it/">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TaskbarBattery">
 <meta property="og:title" content="TaskbarBattery: device batteries in the Windows 11 tray">
-<meta property="og:description" content="Logitech, Nothing and CMF earbuds and any Bluetooth device, with charging state, in one 153 KB app.">
+<meta property="og:description" content="Logitech, Nothing, CMF and AirPods earbuds and any Bluetooth device, with charging state, in one 153 KB app.">
 <meta property="og:url" content="https://danichimi.github.io/taskbar-battery/">
 <meta property="og:image" content="https://danichimi.github.io/taskbar-battery/share.jpg">
 <meta property="og:locale" content="en_US">
@@ -26,7 +26,7 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TaskbarBattery",
-  "description": "Shows the battery level of wireless devices in the Windows 11 notification area: Bluetooth devices, Logitech devices over HID++ on Bluetooth and on Bolt, Unifying and LIGHTSPEED receivers, and Nothing and CMF earbuds with left, right and case.",
+  "description": "Shows the battery level of wireless devices in the Windows 11 notification area: Bluetooth devices, Logitech devices over HID++ on Bluetooth and on Bolt, Unifying and LIGHTSPEED receivers, and Nothing, CMF and AirPods earbuds with left, right and case.",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Windows 10, Windows 11",
   "softwareVersion": "0.1.0",
@@ -72,10 +72,18 @@
     },
     {
       "@type": "Question",
+      "name": "How do I see the AirPods battery on Windows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Connect them to the PC over Bluetooth and open the case: TaskbarBattery shows the left bud, the right bud and the case from the messages AirPods broadcast, in steps of 10%."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "Why is my device not in the panel?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Windows has to know its battery, or it must be a Logitech, Nothing or CMF device. Run the app with --probe and attach the output to an issue on GitHub."
+        "text": "Windows has to know its battery, or it must be a Logitech, Nothing, CMF or Apple device. Run the app with --probe and attach the output to an issue on GitHub."
       }
     },
     {
@@ -236,7 +244,7 @@
     <div class="wrap">
       <p class="eyebrow"><b>Version 0.1.0</b> · Free for Windows 10 and 11</p>
       <h1>Every battery, right by the clock.</h1>
-      <p class="lead">TaskbarBattery shows the charge of your Bluetooth mouse, keyboard and earbuds in the Windows tray, Logitech and Nothing or CMF included.</p>
+      <p class="lead">TaskbarBattery shows the charge of your Bluetooth mouse, keyboard and earbuds in the Windows tray, Logitech, Nothing, CMF and AirPods included.</p>
       <div class="actions">
         <a class="btn btn--primary" href="https://github.com/DaniChimi/taskbar-battery/releases/latest">Download for Windows</a>
         <a class="btn btn--ghost" href="https://github.com/DaniChimi/taskbar-battery">See the source code ›</a>
@@ -259,7 +267,7 @@
           <div class="shot"><img src="img/site/logitech-en.png" alt="MX Master 4 on Bluetooth, MX Keys S charging on a receiver, a mouse charging on a USB cable" width="680" height="512" loading="lazy"></div>
         </article>
         <article class="card">
-          <h3>Nothing and CMF earbuds</h3>
+          <h3>Nothing, CMF and AirPods</h3>
           <p>Left, right and case on one card, which Windows does not show at all.</p>
           <div class="shot"><img src="img/site/earbuds-en.png" alt="CMF Buds 2 with left, case and right levels, and Nothing Ear (a) with the case not reporting" width="680" height="400" loading="lazy"></div>
         </article>
@@ -312,6 +320,8 @@
           <h3>Other brands</h3>
           <ul>
             <li>Xbox Wireless Controller <em class="ok">Tested</em></li>
+            <li>AirPods, AirPods Pro and Max <em>Should work</em></li>
+            <li>Beats <em>Unknown</em></li>
             <li>Bluetooth battery service <em>Should work</em></li>
             <li>Battery Windows cannot read <em>Not supported</em></li>
           </ul>
@@ -327,7 +337,8 @@
         <div class="faq__item"><h3>How do I see my mouse’s battery in Windows 11?</h3><p>Windows shows it only in Settings, Bluetooth and devices, and not for every device. TaskbarBattery puts it next to the clock and warns you when it runs low.</p></div>
         <div class="faq__item"><h3>How do I check a Logitech battery without Options+?</h3><p>TaskbarBattery reads it over Logitech’s HID++ protocol, on Bluetooth and on Bolt, Unifying or LIGHTSPEED receivers, with the charging state.</p></div>
         <div class="faq__item"><h3>How do I see the CMF Buds battery on a PC?</h3><p>Connect the earbuds to the PC over Bluetooth: TaskbarBattery shows the left bud, the right bud and the case, which Windows does not.</p></div>
-        <div class="faq__item"><h3>Why is my device not in the panel?</h3><p>Windows has to know its battery, or it must be a Logitech, Nothing or CMF device. Run the app with --probe and attach the output to an <a href="https://github.com/DaniChimi/taskbar-battery/issues">issue on GitHub</a>.</p></div>
+        <div class="faq__item"><h3>How do I see the AirPods battery on Windows?</h3><p>Connect them to the PC over Bluetooth and open the case: TaskbarBattery shows the left bud, the right bud and the case from the messages AirPods broadcast, in steps of 10%.</p></div>
+        <div class="faq__item"><h3>Why is my device not in the panel?</h3><p>Windows has to know its battery, or it must be a Logitech, Nothing, CMF or Apple device. Run the app with --probe and attach the output to an <a href="https://github.com/DaniChimi/taskbar-battery/issues">issue on GitHub</a>.</p></div>
         <div class="faq__item"><h3>Is it safe to run?</h3><p>The code is open on GitHub and the app makes no network requests. The file is not signed yet, so SmartScreen asks once: More info, then Run anyway.</p></div>
       </div>
     </div>
